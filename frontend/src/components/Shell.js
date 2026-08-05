@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import {
   AirplaneTilt,
+  Brain,
   Bell,
   ChartLineUp,
   ClipboardText,
@@ -14,6 +15,7 @@ import {
 const navigation = [
   { label: "Ringkasan", to: "/", icon: House },
   { label: "Rencana STO", to: "/rencana", icon: AirplaneTilt },
+  { label: "AI Travel Assistant", to: "/ai-travel", icon: Brain },
   { label: "Persetujuan", to: "/persetujuan", icon: ClipboardText },
   { label: "Realisasi", to: "/realisasi", icon: Receipt },
   { label: "Inbox Pemesanan", to: "/inbox", icon: Files },

@@ -30,6 +30,8 @@ PIC Accounting melakukan perencanaan dan realisasi biaya Stock Take Opname (STO)
 - API workflow yang menjalankan submit, approval berjenjang, pengembalian revisi, konfirmasi pemesanan, pengiriman realisasi, dan verifikasi Sekretaris.
 - Halaman review, inbox pemesanan, realisasi/reimbursement, dan monitoring kelengkapan/realisasi/overbudget.
 - Endpoint CRUD dasar dan validasi 4xx untuk input proporsi salah atau peran yang tidak berwenang.
+- Halaman **AI Travel Assistant**: menangkap jadwal, asal, cabang, anggaran, dan preferensi; menampilkan struktur itinerary, biaya, serta alternatif hemat yang akan dihasilkan GPT-5.4.
+- Status koneksi AI terlihat jelas di aplikasi. Pengaktifan respons GPT-5.4 menunggu OpenAI API key milik pengguna.
 
 ### Verification performed
 - API external: create → get → submit/update → get, validasi peran 403, input tidak valid 422, delete → get 404.
@@ -39,6 +41,7 @@ PIC Accounting melakukan perencanaan dan realisasi biaya Stock Take Opname (STO)
 #### P0
 - Integrasi autentikasi organisasi yang benar untuk menggantikan pemilih peran demonstrasi.
 - Object storage privat untuk unggahan bukti aktual dan benchmarking, dengan akses reviewer yang berwenang.
+- Sambungkan OpenAI GPT-5.4 memakai API key pengguna, streaming respons, validasi JSON itinerary, serta penyimpanan rekomendasi yang telah direview.
 
 #### P1
 - Integrasi provider perjalanan live setelah persetujuan partner (Traveloka/tiket.com/Amadeus) dan Google Routes untuk estimasi rute.
