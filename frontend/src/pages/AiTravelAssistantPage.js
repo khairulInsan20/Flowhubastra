@@ -4,10 +4,11 @@ import {
   Bed,
   CalendarBlank,
   Car,
+  CheckCircle,
+  Clock,
   LockKey,
   MapPin,
   Sparkle,
-  Train,
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
@@ -16,6 +17,16 @@ const formatter = new Intl.NumberFormat("id-ID", {
   currency: "IDR",
   maximumFractionDigits: 0,
 });
+
+const airports = [
+  { id: "bdo", name: "Husein Sastranegara", code: "BDO", distance: "6,8 km ke cabang", transfer: 75000, reason: "Paling dekat untuk menjaga waktu tiba dan mobilitas selama STO." },
+  { id: "kjt", name: "Kertajati International", code: "KJT", distance: "68 km ke cabang", transfer: 190000, reason: "Alternatif saat pilihan penerbangan lebih banyak atau biaya tiket lebih efisien." },
+];
+
+const hotels = [
+  { id: "harris", name: "HARRIS Hotel & Conventions Ciumbuleuit", distance: "3,1 km dari cabang", nightly: 670000, rating: "4,4/5", reason: "Keseimbangan jarak cabang, area bisnis, dan fasilitas perjalanan dinas." },
+  { id: "fave", name: "favehotel Hyper Square", distance: "2,4 km dari cabang", nightly: 440000, rating: "4,1/5", reason: "Alternatif hemat dengan akses cepat menuju cabang." },
+];
 
 export default function AiTravelAssistantPage() {
   const [plan, setPlan] = useState({
@@ -26,19 +37,44 @@ export default function AiTravelAssistantPage() {
     budget: "4500000",
     note: "Prioritaskan jadwal yang tiba sebelum jam kerja dan hotel dekat cabang.",
   });
+  const [stage, setStage] = useState(0);
+  const [airportId, setAirportId] = useState("");
+  const [hotelId, setHotelId] = useState("");
+  const [transportId, setTransportId] = useState("");
   const totalBudget = Number(plan.budget || 0);
-  const previewItems = useMemo(() => [
-    { icon: Train, category: "Pergi & pulang", title: `${plan.origin} ↔ Bandung`, amount: Math.round(totalBudget * 0.3), detail: "Moda dipilih berdasarkan waktu tiba, durasi, dan batas anggaran." },
-    { icon: Bed, category: "Akomodasi", title: "Hotel bisnis dekat cabang", amount: Math.round(totalBudget * 0.45), detail: "Pilihan mengutamakan jarak cabang dan kebutuhan perjalanan dinas." },
-    { icon: Car, category: "Mobilitas lokal", title: "Stasiun/bandara, cabang, dan hotel", amount: Math.round(totalBudget * 0.25), detail: "Termasuk seluruh rute perusahaan selama jadwal STO." },
-  ], [plan.origin, totalBudget]);
+  const selectedAirport = airports.find((airport) => airport.id === airportId);
+  const selectedHotel = hotels.find((hotel) => hotel.id === hotelId);
+  const localTransport = useMemo(() => [
+    { id: "airport-branch", label: `${selectedAirport?.code || "Bandara"} → Cabang`, detail: "Taksi bandara / ride-hailing", estimate: selectedAirport?.transfer || 0 },
+    { id: "branch-hotel", label: "Cabang → Hotel", detail: "Ride-hailing standar", estimate: 48000 },
+    { id: "hotel-airport", label: `${selectedHotel ? "Hotel" : "Penginapan"} → ${selectedAirport?.code || "Bandara"}`, detail: "Pemesanan kendaraan terjadwal", estimate: selectedAirport?.transfer || 0 },
+  ], [selectedAirport, selectedHotel]);
+  const selectedTransport = localTransport.find((item) => item.id === transportId);
 
   function update(field, value) {
     setPlan({ ...plan, [field]: value });
   }
 
-  function explainConnection() {
-    toast.info("AI Travel Assistant akan aktif setelah OpenAI API key dihubungkan.");
+  function startAirportAnalysis(event) {
+    event.preventDefault();
+    setStage(1);
+    toast.info("Analisis akan dimulai dari bandara yang paling relevan.");
+  }
+
+  function chooseAirport(id) {
+    setAirportId(id);
+    setStage(2);
+  }
+
+  function chooseHotel(id) {
+    setHotelId(id);
+    setStage(3);
+  }
+
+  function chooseTransport(id) {
+    setTransportId(id);
+    setStage(4);
+    toast.info("AI akan menggabungkan pilihan ini menjadi rencana perjalanan setelah OpenAI terhubung.");
   }
 
   return (
@@ -47,67 +83,47 @@ export default function AiTravelAssistantPage() {
         <div>
           <p className="eyebrow">PERENCANAAN CERDAS / PRA-STO</p>
           <h1 data-testid="ai-travel-assistant-title">AI Travel Assistant</h1>
-          <p data-testid="ai-travel-assistant-description">Siapkan konteks trip agar AI dapat menyusun itinerary, estimasi biaya, dan alternatif hemat yang dapat Anda review.</p>
+          <p data-testid="ai-travel-assistant-description">AI membuat keputusan berurutan agar rute, tempat menginap, dan mobilitas lokal saling sesuai.</p>
         </div>
         <span className="connection-chip" data-testid="ai-connection-status"><LockKey size={16} weight="bold" /> Menunggu koneksi OpenAI</span>
       </div>
 
-      <div className="ai-layout">
-        <form className="form-panel ai-input-panel" onSubmit={(event) => { event.preventDefault(); explainConnection(); }} data-testid="ai-trip-context-form">
-          <div className="form-section">
-            <p className="eyebrow">KONTEKS PERJALANAN</p>
-            <h2>Data yang akan dibaca AI</h2>
-            <div className="form-grid ai-form-grid">
-              <label>Kota keberangkatan<input value={plan.origin} onChange={(event) => update("origin", event.target.value)} data-testid="ai-origin-input" /></label>
-              <label>Cabang tujuan<input value={plan.branch} onChange={(event) => update("branch", event.target.value)} data-testid="ai-branch-input" /></label>
-              <label>Tanggal mulai<input type="date" value={plan.startDate} onChange={(event) => update("startDate", event.target.value)} data-testid="ai-start-date-input" /></label>
-              <label>Tanggal selesai<input type="date" value={plan.endDate} onChange={(event) => update("endDate", event.target.value)} data-testid="ai-end-date-input" /></label>
-              <label>Anggaran total (IDR)<input type="number" value={plan.budget} onChange={(event) => update("budget", event.target.value)} data-testid="ai-total-budget-input" /></label>
-            </div>
-            <label className="ai-note-label">Preferensi atau batasan perjalanan<textarea value={plan.note} onChange={(event) => update("note", event.target.value)} data-testid="ai-travel-preference-input" /></label>
-          </div>
-          <button className="primary-button" type="submit" data-testid="generate-ai-trip-button"><Sparkle size={18} weight="fill" /> Buat rekomendasi AI</button>
-        </form>
-
-        <aside className="ai-readiness-panel" data-testid="ai-readiness-panel">
-          <Sparkle size={34} weight="duotone" />
-          <p className="eyebrow">KELUARAN AI</p>
-          <h2>Rencana yang akan dihasilkan</h2>
-          <ul>
-            <li data-testid="ai-output-itinerary"><CalendarBlank size={18} /> Itinerary pergi, pelaksanaan STO, dan pulang</li>
-            <li data-testid="ai-output-transport"><AirplaneTilt size={18} /> Moda perjalanan dengan pertimbangan waktu dan biaya</li>
-            <li data-testid="ai-output-hotel"><Bed size={18} /> Hotel yang relevan dengan jarak cabang dan durasi kunjungan</li>
-            <li data-testid="ai-output-savings"><MapPin size={18} /> Dua sampai tiga alternatif hemat beserta alasan pemilihannya</li>
-          </ul>
-          <p className="muted" data-testid="ai-readiness-message">Hasil AI akan selalu meminta review PIC sebelum menjadi RAB.</p>
-        </aside>
+      <div className="ai-stepper" data-testid="ai-decision-stepper">
+        {["Bandara", "Penginapan", "Transport lokal", "Review RAB"].map((label, index) => <div className={stage >= index + 1 ? "step-active" : ""} key={label} data-testid={`ai-step-${index + 1}`}><span>{index + 1}</span>{label}</div>)}
       </div>
 
-      <section className="ai-preview-panel" data-testid="ai-response-preview-panel">
-        <div className="panel-heading">
-          <div>
-            <p className="eyebrow">PRATINJAU FORMAT JAWABAN</p>
-            <h2>Rencana perjalanan yang akan direkomendasikan</h2>
+      <form className="form-panel ai-input-panel" onSubmit={startAirportAnalysis} data-testid="ai-trip-context-form">
+        <div className="form-section">
+          <p className="eyebrow">KONTEKS PERJALANAN</p>
+          <h2>Mulai dari jadwal dan lokasi STO</h2>
+          <div className="form-grid ai-form-grid">
+            <label>Kota keberangkatan<input value={plan.origin} onChange={(event) => update("origin", event.target.value)} data-testid="ai-origin-input" /></label>
+            <label>Cabang tujuan<input value={plan.branch} onChange={(event) => update("branch", event.target.value)} data-testid="ai-branch-input" /></label>
+            <label>Tanggal mulai<input type="date" value={plan.startDate} onChange={(event) => update("startDate", event.target.value)} data-testid="ai-start-date-input" /></label>
+            <label>Tanggal selesai<input type="date" value={plan.endDate} onChange={(event) => update("endDate", event.target.value)} data-testid="ai-end-date-input" /></label>
+            <label>Anggaran total (IDR)<input type="number" value={plan.budget} onChange={(event) => update("budget", event.target.value)} data-testid="ai-total-budget-input" /></label>
           </div>
-          <span className="estimate-badge" data-testid="ai-preview-disclaimer">Menunggu AI terhubung</span>
+          <label className="ai-note-label">Preferensi atau batasan perjalanan<textarea value={plan.note} onChange={(event) => update("note", event.target.value)} data-testid="ai-travel-preference-input" /></label>
         </div>
-        <div className="ai-itinerary-summary" data-testid="ai-itinerary-summary">
-          <div><CalendarBlank size={20} weight="bold" /><span>{plan.startDate} — {plan.endDate}</span></div>
-          <div><MapPin size={20} weight="bold" /><span>{plan.origin} → {plan.branch}</span></div>
-          <div><Sparkle size={20} weight="fill" /><span>Anggaran target {formatter.format(totalBudget)}</span></div>
-        </div>
-        <div className="recommendation-grid">
-          {previewItems.map((item) => {
-            const Icon = item.icon;
-            return <article key={item.category} data-testid={`ai-preview-${item.category.toLowerCase().replaceAll(" ", "-").replaceAll("&", "dan")}`}>
-              <span><Icon size={15} weight="bold" /> {item.category}</span>
-              <strong>{item.title}</strong>
-              <p>{item.detail}</p>
-              <b>{formatter.format(item.amount)}</b>
-            </article>;
-          })}
-        </div>
-      </section>
+        <button className="primary-button" type="submit" data-testid="start-airport-analysis-button"><Sparkle size={18} weight="fill" /> Analisis bandara</button>
+      </form>
+
+      {stage >= 1 && <section className="ai-stage-panel" data-testid="airport-stage-panel">
+        <div className="panel-heading"><div><p className="eyebrow">TAHAP 1 / GERBANG PERJALANAN</p><h2>Bandara yang paling sesuai</h2></div><span className="estimate-badge">Urutan pertama</span></div>
+        <div className="decision-grid">{airports.map((airport) => <article className={`decision-card ${airportId === airport.id ? "decision-selected" : ""}`} key={airport.id} data-testid={`airport-option-${airport.id}`}><AirplaneTilt size={26} weight="duotone" /><div><span>{airport.code} · {airport.distance}</span><strong>{airport.name}</strong><p>{airport.reason}</p><b>Transfer estimasi {formatter.format(airport.transfer)}</b></div><button className="secondary-button" type="button" onClick={() => chooseAirport(airport.id)} data-testid={`select-airport-${airport.id}`}>{airportId === airport.id ? "Dipilih" : "Pilih bandara"}</button></article>)}</div>
+      </section>}
+
+      {stage >= 2 && <section className="ai-stage-panel" data-testid="hotel-stage-panel">
+        <div className="panel-heading"><div><p className="eyebrow">TAHAP 2 / TEMPAT MENGINAP</p><h2>Penginapan setelah bandara ditetapkan</h2></div><span className="estimate-badge">Menimbang {selectedAirport?.code}</span></div>
+        <div className="decision-grid">{hotels.map((hotel) => <article className={`decision-card ${hotelId === hotel.id ? "decision-selected" : ""}`} key={hotel.id} data-testid={`hotel-option-${hotel.id}`}><Bed size={26} weight="duotone" /><div><span>{hotel.rating} · {hotel.distance}</span><strong>{hotel.name}</strong><p>{hotel.reason}</p><b>{formatter.format(hotel.nightly)} / malam</b></div><button className="secondary-button" type="button" onClick={() => chooseHotel(hotel.id)} data-testid={`select-hotel-${hotel.id}`}>{hotelId === hotel.id ? "Dipilih" : "Pilih hotel"}</button></article>)}</div>
+      </section>}
+
+      {stage >= 3 && <section className="ai-stage-panel" data-testid="local-transport-stage-panel">
+        <div className="panel-heading"><div><p className="eyebrow">TAHAP 3 / MOBILITAS LOKAL</p><h2>Rute transportasi yang terdekat</h2></div><span className="estimate-badge">Berdasar rute terpilih</span></div>
+        <div className="transport-grid">{localTransport.map((route) => <button type="button" className={`transport-card ${transportId === route.id ? "transport-selected" : ""}`} key={route.id} onClick={() => chooseTransport(route.id)} data-testid={`select-transport-${route.id}`}><Car size={22} weight="duotone" /><span>{route.detail}</span><strong>{route.label}</strong><b>{formatter.format(route.estimate)}</b></button>)}</div>
+      </section>}
+
+      {stage === 4 && <section className="ai-review-panel" data-testid="ai-trip-review-panel"><CheckCircle size={28} weight="fill" /><div><p className="eyebrow">TAHAP 4 / SIAP DIREVIEW</p><h2>Rencana keputusan berurutan telah terbentuk</h2><p data-testid="ai-trip-review-summary">{selectedAirport?.name}, {selectedHotel?.name}, dan rute {selectedTransport?.label} akan menjadi konteks awal GPT-5.4 untuk menghasilkan itinerary lengkap, estimasi total, serta alternatif hemat.</p></div><div className="ai-review-budget"><Clock size={18} /><span>Budget target</span><strong>{formatter.format(totalBudget)}</strong></div></section>}
     </section>
   );
 }
