@@ -1,0 +1,109 @@
+{
+  "theme": "Light theme preferred for corporate accounting workflows to maximize data density, readability, and clarity. A dark mode toggle can be provided but light mode is the default.",
+  "typography": {
+    "headings": {
+      "fontFamily": "Manrope",
+      "weights": ["400", "700", "800"],
+      "usage": "Use for all dashboard headers, page titles, widget titles, and modal headers.",
+      "letterSpacing": "tracking-tight"
+    },
+    "body": {
+      "fontFamily": "IBM Plex Sans",
+      "weights": ["400", "500", "600"],
+      "usage": "Use for all tabular data, input fields, financial figures, budget allocations, and general body copy."
+    },
+    "scales": {
+      "h1": "text-3xl sm:text-4xl font-extrabold tracking-tight",
+      "h2": "text-2xl sm:text-3xl font-bold tracking-tight",
+      "h3": "text-xl sm:text-2xl font-semibold tracking-tight",
+      "h4": "text-lg font-semibold",
+      "body": "text-sm",
+      "labels": "text-xs uppercase tracking-[0.2em] font-semibold text-slate-500"
+    }
+  },
+  "colors": {
+    "archetype": "ARCHETYPE 4: SWISS & HIGH-CONTRAST (Authority, Clarity, Truth)",
+    "palette": {
+      "primary": "#D32F2F", 
+      "primary_hover": "#B71C1C",
+      "background": "#F8F9FA",
+      "surface": "#FFFFFF",
+      "text_main": "#111827",
+      "text_muted": "#4B5563",
+      "border": "#E5E7EB",
+      "success": "#10B981",
+      "warning": "#F59E0B",
+      "danger": "#EF4444"
+    },
+    "rules": [
+      "No full-screen gradients. Color is for function only.",
+      "Use Primary Red (#D32F2F) strictly for key actions (e.g., Submit RAB, Approve, Add Plan) to create a subtle brand connection to Auto2000, while maintaining a stark data-driven UI.",
+      "Use Success/Warning/Danger colors explicitly for budget status indicators (Overbudget = Danger, On-track = Success, Pending = Warning).",
+      "Never use pure black or grey; neutral greys are slightly tinted (slate)."
+    ]
+  },
+  "visual_enhancers": {
+    "surfaces": "Grid Borders (The Technical Look). Use flat solid backgrounds with sharp 1px borders (border-border). Dashboard widgets should be clean cards without heavy drop shadows. On hover, interactive cards can have a slight lift (-translate-y-1) and subtle shadow-md.",
+    "glassmorphism": "Avoid in data-heavy areas to prevent visual refraction. Use flat solid surfaces. For a sticky header, you may apply backdrop-blur-xl bg-white/80 with a 1px border-b.",
+    "icons": "Use Phosphor Icons (@phosphor-icons/react) for crisp, technical, professional dashboard iconography."
+  },
+  "components": {
+    "instructions_to_main_agent": [
+      "Use Shadcn UI for all form inputs, data tables, dialogs/modals, selects, and dropdowns.",
+      "Customize Shadcn Tabs to have h-auto instead of the fixed h-9 class.",
+      "Use Recharts or Shadcn Charts for budget proportion visualization (e.g., a Donut chart showing 30% Flight, 50% Hotel, 20% Transport).",
+      "Use Sonner for all toast notifications (e.g., 'RAB Submitted', 'Approval Successful').",
+      "Ensure all interactive elements and key workflow actions have data-testid attributes (e.g., data-testid='submit-rab-button').",
+      "DO NOT use transparent backgrounds for dropdown menus or modals. They must have a solid surface background.",
+      "Implement clear multi-step form structures for the Pra-STO trip planning and budget allocation process."
+    ]
+  },
+  "grids_and_layouts": {
+    "strategy": "MODE B: High Density Grid (For Dashboards / Analytics).",
+    "layout": "Sidebar navigation (collapsible for focus) with a top header containing breadcrumbs, role indicator, and user profile.",
+    "grid": "Main content area uses a responsive grid (grid-cols-1 md:grid-cols-3 lg:grid-cols-4).",
+    "spacing": "Tight gaps (gap-4 or gap-6) between widgets for data correlation. Use generous padding (p-6) inside card containers to allow financial data to breathe.",
+    "alignment": "Left-align all data tables, form labels, and financial figures for optimal reading. Right-align numerical amounts in tables where appropriate."
+  },
+  "motion": {
+    "interactions": "Minimalist. Focus on micro-interactions for feedback.",
+    "page_transitions": "Use staggered fade-in animations (framer-motion) for dashboard widgets upon initial load to soften the dense UI.",
+    "rules": [
+      "Do not use 'transition-all'. Explicitly declare properties (e.g., transition-colors, transition-transform).",
+      "Respect prefers-reduced-motion for all UI animations."
+    ]
+  },
+  "accessibility": {
+    "contrast": "Ensure white text against the primary red background meets at least a 4.5:1 contrast ratio. Secondary text must clearly stand out from the background.",
+    "focus": "Apply focus:ring-2 focus:ring-primary/50 focus:outline-none on all inputs and buttons to support keyboard navigation.",
+    "testing": "All key elements must include semantic data-testid attributes."
+  },
+  "media_and_assets": {
+    "images": [
+      {
+        "url": "https://images.unsplash.com/photo-1573497161161-c3e73707e25c?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDN8MHwxfHNlYXJjaHwzfHxidXNpbmVzcyUyMHByb2Zlc3Npb25hbCUyMHBvcnRyYWl0fGVufDB8fHx8MTc4NTg3NTY3MXww&ixlib=rb-4.1.0&q=85",
+        "category": "avatars",
+        "description": "User profile avatar for Secretary or Coordinator roles."
+      },
+      {
+        "url": "https://images.pexels.com/photos/9623645/pexels-photo-9623645.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "category": "avatars",
+        "description": "User profile avatar for Manager, SPV, or PIC Accounting roles."
+      },
+      {
+        "url": "https://images.pexels.com/photos/14526255/pexels-photo-14526255.jpeg",
+        "category": "backgrounds",
+        "description": "Subtle corporate building background for the Auth/Login screen."
+      }
+    ]
+  },
+  "universal_guidelines_for_main_agent": [
+    "Do not converge toward generic outputs. Apply the Swiss High-Contrast theme rigorously.",
+    "Never apply universal transition ('transition: all').",
+    "Never center align the entire app container (.App { text-align: center; } is forbidden).",
+    "Do not use AI emoji characters (🤖🧠) for icons. Use Phosphor Icons.",
+    "Never use placeholder URLs (like via.placeholder.com). Use provided image URLs.",
+    "Create depth through layered design elements with z-index hierarchy and crisp 1px borders.",
+    "Ensure role-based dashboard states are clearly separated (PIC vs Coordinator vs Manager)."
+  ]
+}
