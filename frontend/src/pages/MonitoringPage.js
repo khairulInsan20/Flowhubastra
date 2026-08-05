@@ -1,0 +1,10 @@
+import { useEffect, useState } from "react";
+import { WarningCircle } from "@phosphor-icons/react";
+import { getTrips } from "@/api";
+import BudgetBar from "@/components/BudgetBar";
+
+export default function MonitoringPage() {
+  const [trips, setTrips] = useState([]);
+  useEffect(() => { getTrips().then(setTrips); }, []);
+  return <section className="page-content" data-testid="monitoring-page"><div className="page-heading"><div><p className="eyebrow">KOORDINATOR / SPV / MANAGER</p><h1 data-testid="monitoring-title">Monitoring anggaran & kelengkapan</h1><p data-testid="monitoring-description">Lihat status keputusan, progres bukti, dan indikasi overbudget untuk setiap PIC.</p></div></div><section className="data-panel" data-testid="monitoring-table-panel"><div className="monitoring-table"><div className="table-header"><span>Rencana STO</span><span>Alokasi anggaran</span><span>Realisasi</span><span>Status</span></div>{trips.map((trip) => { const actual = trip.realization?.total_actual || 0; const over = actual > trip.total_budget; const completeness = trip.realization ? 100 : trip.attachments?.length ? 55 : 20; return <article className="monitoring-row" key={trip.id} data-testid={`monitoring-trip-${trip.id}`}><div><strong>{trip.title}</strong><span>{trip.traveler_name} · {trip.branch}</span><div className="tiny-progress"><i style={{ width: `${completeness}%` }} /></div><small data-testid={`completeness-${trip.id}`}>Kelengkapan {completeness}%</small></div><BudgetBar allocations={trip.allocations} /><div><strong>Rp{actual.toLocaleString("id-ID")}</strong><span>Budget Rp{trip.total_budget.toLocaleString("id-ID")}</span>{over && <em className="overbudget" data-testid={`overbudget-alert-${trip.id}`}><WarningCircle size={15} weight="fill" /> Overbudget</em>}</div><span className="status-chip" data-testid={`monitoring-status-${trip.id}`}>{trip.status}</span></article>; })}</div></section></section>;
+}

@@ -1,54 +1,30 @@
-import { useEffect } from "react";
 import "@/App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import axios from "axios";
-import { HOME } from "@/constants/testIds";
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
-
-const Home = () => {
-  const helloWorldApi = async () => {
-    try {
-      const response = await axios.get(`${API}/`);
-      console.log(response.data.message);
-    } catch (e) {
-      console.error(e, `errored out requesting / api`);
-    }
-  };
-
-  useEffect(() => {
-    helloWorldApi();
-  }, []);
-
-  return (
-    <div>
-      <header className="App-header">
-        <a
-          data-testid={HOME.emergentLink}
-          className="App-link"
-          href="https://emergent.sh"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" />
-        </a>
-        <p className="mt-5">Building something incredible ~!</p>
-      </header>
-    </div>
-  );
-};
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { Toaster } from "sonner";
+import Shell from "@/components/Shell";
+import DashboardPage from "@/pages/DashboardPage";
+import PlanPage from "@/pages/PlanPage";
+import ApprovalsPage from "@/pages/ApprovalsPage";
+import RealizationPage from "@/pages/RealizationPage";
+import InboxPage from "@/pages/InboxPage";
+import MonitoringPage from "@/pages/MonitoringPage";
 
 function App() {
   return (
     <div className="App">
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Home />}>
-            <Route index element={<Home />} />
+          <Route path="/" element={<Shell />}>
+            <Route index element={<DashboardPage />} />
+            <Route path="rencana" element={<PlanPage />} />
+            <Route path="persetujuan" element={<ApprovalsPage />} />
+            <Route path="realisasi" element={<RealizationPage />} />
+            <Route path="inbox" element={<InboxPage />} />
+            <Route path="monitoring" element={<MonitoringPage />} />
           </Route>
         </Routes>
       </BrowserRouter>
+      <Toaster position="top-right" richColors />
     </div>
   );
 }
