@@ -5,6 +5,38 @@ import uuid
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 
+DEMO_PROFILES = [
+    {
+        "profile_id": "pic-nadia",
+        "role": "PIC Accounting",
+        "name": "Nadia Pratama",
+        "email": "nadia.pratama@auto2000.co.id",
+        "phone": "081234567890",
+        "assigned_region": "Jawa Barat",
+    },
+    {
+        "profile_id": "pic-rizky",
+        "role": "PIC Accounting",
+        "name": "Rizky Mahendra",
+        "email": "rizky.mahendra@auto2000.co.id",
+        "phone": "081298765432",
+        "assigned_region": "DKI Jakarta",
+    },
+    {
+        "profile_id": "coord-jabar",
+        "role": "Koordinator",
+        "name": "Dewi Anggraini",
+        "email": "dewi.anggraini@auto2000.co.id",
+        "phone": "081355512345",
+        "assigned_region": "Jawa Barat",
+    },
+]
+
+
+def get_demo_profile(profile_id: str) -> Dict[str, Any] | None:
+    return next((profile for profile in DEMO_PROFILES if profile["profile_id"] == profile_id), None)
+
+
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 

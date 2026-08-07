@@ -13,19 +13,20 @@ import {
 } from "@phosphor-icons/react";
 
 const navigation = [
-  { label: "Ringkasan", to: "/", icon: House },
-  { label: "Rencana STO", to: "/rencana", icon: AirplaneTilt },
-  { label: "AI Travel Assistant", to: "/ai-travel", icon: Brain },
-  { label: "Persetujuan", to: "/persetujuan", icon: ClipboardText },
-  { label: "Realisasi", to: "/realisasi", icon: Receipt },
-  { label: "Inbox Pemesanan", to: "/inbox", icon: Files },
-  { label: "Monitoring", to: "/monitoring", icon: ChartLineUp },
+  { label: "Ringkasan", to: "/", icon: House, roles: ["PIC Accounting", "Koordinator", "SPV", "Manager", "Sekretaris Divisi"] },
+  { label: "Rencana STO", to: "/rencana", icon: AirplaneTilt, roles: ["PIC Accounting", "Koordinator"] },
+  { label: "AI Travel Assistant", to: "/ai-travel", icon: Brain, roles: ["PIC Accounting"] },
+  { label: "Monitoring RAB", to: "/persetujuan", icon: ClipboardText, roles: ["Koordinator", "SPV", "Manager"] },
+  { label: "Realisasi", to: "/realisasi", icon: Receipt, roles: ["PIC Accounting"] },
+  { label: "Inbox Pemesanan", to: "/inbox", icon: Files, roles: ["PIC Accounting", "Sekretaris Divisi"] },
+  { label: "Monitoring Anggaran", to: "/monitoring", icon: ChartLineUp, roles: ["Koordinator", "SPV", "Manager"] },
 ];
 
 const roles = ["PIC Accounting", "Koordinator", "SPV", "Manager", "Sekretaris Divisi"];
 
 export default function Shell() {
   const [role, setRole] = useState("PIC Accounting");
+  const profileId = role === "PIC Accounting" ? "pic-nadia" : role === "Koordinator" ? "coord-jabar" : "";
 
   return (
     <div className="app-shell" data-testid="sto-application-shell">
@@ -36,7 +37,7 @@ export default function Shell() {
         </Link>
         <p className="sidebar-caption" data-testid="sidebar-period-label">SIKLUS STO 2026</p>
         <nav className="nav-links" aria-label="Navigasi utama">
-          {navigation.map((item) => {
+          {navigation.filter((item) => item.roles.includes(role)).map((item) => {
             const Icon = item.icon;
             return (
               <NavLink
@@ -83,7 +84,7 @@ export default function Shell() {
             </div>
           </div>
         </header>
-        <Outlet context={{ role }} />
+        <Outlet context={{ role, profileId }} />
       </main>
     </div>
   );

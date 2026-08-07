@@ -11,6 +11,8 @@ import {
   Sparkle,
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
+import { useOutletContext } from "react-router-dom";
+import AccessDenied from "@/components/AccessDenied";
 
 const formatter = new Intl.NumberFormat("id-ID", {
   style: "currency",
@@ -29,6 +31,7 @@ const hotels = [
 ];
 
 export default function AiTravelAssistantPage() {
+  const { role } = useOutletContext();
   const [plan, setPlan] = useState({
     origin: "Jakarta",
     branch: "Auto2000 Bandung Soekarno Hatta",
@@ -50,6 +53,10 @@ export default function AiTravelAssistantPage() {
     { id: "hotel-airport", label: `${selectedHotel ? "Hotel" : "Penginapan"} → ${selectedAirport?.code || "Bandara"}`, detail: "Pemesanan kendaraan terjadwal", estimate: selectedAirport?.transfer || 0 },
   ], [selectedAirport, selectedHotel]);
   const selectedTransport = localTransport.find((item) => item.id === transportId);
+
+  if (role !== "PIC Accounting") {
+    return <AccessDenied feature="AI Travel Assistant" roles="PIC Accounting" />;
+  }
 
   function update(field, value) {
     setPlan({ ...plan, [field]: value });

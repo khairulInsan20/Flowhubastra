@@ -5,15 +5,17 @@ from fastapi import APIRouter, Depends, HTTPException
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from models import (
+    AllocationUpdate,
     BookingCreate,
     MockUploadCreate,
     RealizationCreate,
     Role,
+    ScheduleCreate,
     TravelRecommendationQuery,
     TripCreate,
     WorkflowAction,
 )
-from store import now_iso, public_trip, public_trips, unique_id
+from store import DEMO_PROFILES, get_demo_profile, now_iso, public_trip, public_trips, unique_id
 
 
 def build_router(get_db):
@@ -50,17 +52,44 @@ def build_router(get_db):
             "trips": trips[:5],
         }
 
+    @router.get("/notifications")
+    async def list_notifications(profile_id: str, db: AsyncIOMotorDatabase = Depends(get_db)):
+        return await db.notifications.find({"profile_id": profile_id}, {"_id": 0}).sort("created_at", -1).to_list(50)
+
     @router.get("/trips")
     async def list_trips(db: AsyncIOMotorDatabase = Depends(get_db)):
         return await public_trips(db)
 
-    @router.post("/trips", status_code=201)
-    async def create_trip(payload: TripCreate, db: AsyncIOMotorDatabase = Depends(get_db)):
+    @router.get("/profiles/pics")
+    async def list_pic_profiles():
+        return [profile for profile in DEMO_PROFILES if profile["role"] == Role.PIC.value]
+
+    @router.post("/trips/schedule", status_code=201)
+    async def create_schedule(
+        payload: ScheduleCreate,
+        actor_role: Role,
+        coordinator_profile_id: str,
+        db: AsyncIOMotorDatabase = Depends(get_db),
+    ):
+        coordinator = get_demo_profile(coordinator_profile_id)
+        pic = get_demo_profile(payload.pic_profile_id)
+        if actor_role != Role.COORDINATOR or not coordinator or coordinator["role"] != Role.COORDINATOR.value:
+            raise HTTPException(status_code=403, detail="Hanya Koordinator yang dapat membuat rencana perjalanan.")
+        if coordinator["assigned_region"] != payload.region:
+            raise HTTPException(status_code=403, detail="Koordinator hanya dapat membuat STO pada wilayah penugasannya.")
+        if not pic or pic["role"] != Role.PIC.value:
+            raise HTTPException(status_code=422, detail="PIC Accounting yang dipilih tidak valid.")
         document = payload.model_dump()
+        document.pop("pic_profile_id")
         document.update({
             "id": unique_id("sto"),
-            "created_by": Role.PIC.value,
-            "status": "DRAF",
+            "traveler_name": pic["name"],
+            "traveler_phone": pic["phone"],
+            "traveler_email": pic["email"],
+            "assigned_pic_id": pic["profile_id"],
+            "created_by": coordinator["profile_id"],
+            "allocations": [],
+            "status": "DRAF ALOKASI PIC",
             "approval_step": 0,
             "approval_history": [],
             "booking": None,
@@ -71,6 +100,25 @@ def build_router(get_db):
         })
         await db.trips.insert_one(document.copy())
         return {key: value for key, value in document.items() if key != "_id"}
+
+    @router.patch("/trips/{trip_id}/allocation")
+    async def set_allocation(trip_id: str, payload: AllocationUpdate, db: AsyncIOMotorDatabase = Depends(get_db)):
+        trip = await get_trip_or_404(trip_id, db)
+        if payload.actor_role != Role.PIC:
+            raise HTTPException(status_code=403, detail="Hanya PIC Accounting yang dapat menentukan alokasi.")
+        if trip.get("assigned_pic_id") != payload.pic_profile_id:
+            raise HTTPException(status_code=403, detail="PIC hanya dapat mengatur alokasi untuk STO yang ditugaskan kepadanya.")
+        if trip["status"] not in {"DRAF ALOKASI PIC", "PERLU REVISI"}:
+            raise HTTPException(status_code=400, detail="Alokasi tidak dapat diubah pada tahap ini.")
+        await db.trips.update_one(
+            {"id": trip_id},
+            {"$set": {"allocations": [item.model_dump() for item in payload.allocations], "status": "DRAF", "updated_at": now_iso()}},
+        )
+        return await get_trip_or_404(trip_id, db)
+
+    @router.post("/trips", status_code=201)
+    async def create_trip(payload: TripCreate, db: AsyncIOMotorDatabase = Depends(get_db)):
+        raise HTTPException(status_code=403, detail="Gunakan rute penjadwalan Koordinator untuk membuat rencana STO.")
 
     @router.get("/trips/{trip_id}")
     async def get_trip(trip_id: str, db: AsyncIOMotorDatabase = Depends(get_db)):
@@ -91,10 +139,17 @@ def build_router(get_db):
         return {"message": "Draf RAB berhasil dihapus."}
 
     @router.post("/trips/{trip_id}/submit")
-    async def submit_trip(trip_id: str, actor_role: Role, db: AsyncIOMotorDatabase = Depends(get_db)):
+    async def submit_trip(
+        trip_id: str,
+        actor_role: Role,
+        pic_profile_id: str = "",
+        db: AsyncIOMotorDatabase = Depends(get_db),
+    ):
         trip = await get_trip_or_404(trip_id, db)
         if actor_role != Role.PIC:
             raise HTTPException(status_code=403, detail="Hanya PIC Accounting yang dapat mengajukan RAB.")
+        if trip.get("assigned_pic_id") and trip["assigned_pic_id"] != pic_profile_id:
+            raise HTTPException(status_code=403, detail="PIC hanya dapat mengajukan RAB STO yang ditugaskan kepadanya.")
         if trip["status"] != "DRAF":
             raise HTTPException(status_code=400, detail="RAB ini sudah diajukan.")
         await db.trips.update_one({"id": trip_id}, {"$set": {"status": "MENUNGGU KOORDINATOR", "approval_step": 1, "updated_at": now_iso()}})
@@ -128,6 +183,17 @@ def build_router(get_db):
             {"id": trip_id},
             {"$set": {"status": status, "approval_step": step, "updated_at": now_iso()}, "$push": {"approval_history": history}},
         )
+        if action == "revisi" and trip.get("assigned_pic_id"):
+            notification = {
+                "id": unique_id("notif"),
+                "profile_id": trip["assigned_pic_id"],
+                "trip_id": trip_id,
+                "type": "REVISI RAB",
+                "message": f"RAB {trip['title']} perlu direvisi oleh {payload.actor_role.value}.",
+                "comment": payload.comment,
+                "created_at": now_iso(),
+            }
+            await db.notifications.insert_one(notification)
         return await get_trip_or_404(trip_id, db)
 
     @router.post("/trips/{trip_id}/booking")

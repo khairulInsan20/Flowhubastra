@@ -3,6 +3,7 @@ import { PaperPlaneTilt, Receipt } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { getTrips, submitRealization } from "@/api";
 import { useOutletContext } from "react-router-dom";
+import AccessDenied from "@/components/AccessDenied";
 
 export default function RealizationPage() {
   const { role } = useOutletContext();
@@ -11,6 +12,9 @@ export default function RealizationPage() {
   const [form, setForm] = useState({ description: "Transportasi lokal cabang ke hotel", amount: "280000", account: "BCA 1234567890 a.n. Nadia Pratama", rating: "4", note: "Jadwal perjalanan dan hotel mendukung pelaksanaan STO dengan baik." });
   const load = () => getTrips().then((items) => { setTrips(items); if (!tripId && items.length) setTripId(items[0].id); });
   useEffect(() => { load(); }, []);
+  if (role !== "PIC Accounting") {
+    return <AccessDenied feature="Realisasi & reimbursement" roles="PIC Accounting" />;
+  }
   const selected = trips.find((trip) => trip.id === tripId);
   async function send(event) {
     event.preventDefault();

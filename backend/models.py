@@ -30,11 +30,33 @@ class TripCreate(BaseModel):
     traveler_phone: str
 
     @model_validator(mode="after")
-    def validate_allocation_total(self):
+    def validate_trip_allocation_total(self):
         if sum(item.percentage for item in self.allocations) != 100:
             raise ValueError("Total proporsi anggaran harus tepat 100%.")
         return self
 
+
+class ScheduleCreate(BaseModel):
+    title: str = Field(min_length=4, max_length=120)
+    region: str
+    branch: str
+    departure_city: str
+    start_date: str
+    end_date: str
+    total_budget: int = Field(gt=0)
+    pic_profile_id: str
+
+
+class AllocationUpdate(BaseModel):
+    actor_role: Role
+    pic_profile_id: str
+    allocations: List[Allocation]
+
+    @model_validator(mode="after")
+    def validate_allocation_total(self):
+        if sum(item.percentage for item in self.allocations) != 100:
+            raise ValueError("Total proporsi anggaran harus tepat 100%.")
+        return self
 
 class WorkflowAction(BaseModel):
     actor_role: Role

@@ -33,6 +33,8 @@ PIC Accounting melakukan perencanaan dan realisasi biaya Stock Take Opname (STO)
 - Halaman **AI Travel Assistant**: menangkap jadwal, asal, cabang, anggaran, dan preferensi; menampilkan struktur itinerary, biaya, serta alternatif hemat yang akan dihasilkan GPT-5.4.
 - Status koneksi AI terlihat jelas di aplikasi. Pengaktifan respons GPT-5.4 menunggu OpenAI API key milik pengguna.
 - AI Travel Assistant kini memakai wizard keputusan berurutan: pilih bandara/rekomendasi gerbang perjalanan, pilih penginapan berdasarkan keputusan itu, lalu pilih transportasi lokal berdasarkan bandara dan hotel terpilih sebelum review RAB.
+- Otorisasi demonstrasi berbasis peran diterapkan: Koordinator membuat jadwal STO pada wilayah penugasannya dan menetapkan PIC; data nama, email, dan telepon PIC terisi dari direktori profil contoh; PIC menetapkan alokasi, menggunakan AI, mengirim realisasi, serta melihat pesanan/revisi miliknya.
+- Menu Monitoring RAB dan Monitoring Anggaran dibatasi bagi Koordinator/SPV/Manager; Inbox Pemesanan dibatasi bagi PIC/Sekretaris; Sekretaris menerima daftar pemesanan untuk checklist; revisi RAB membuat notifikasi inbox PIC.
 
 ### Verification performed
 - API external: create → get → submit/update → get, validasi peran 403, input tidak valid 422, delete → get 404.
@@ -41,6 +43,7 @@ PIC Accounting melakukan perencanaan dan realisasi biaya Stock Take Opname (STO)
 ### Prioritized backlog
 #### P0
 - Integrasi autentikasi organisasi yang benar untuk menggantikan pemilih peran demonstrasi.
+- Ganti identitas demo dengan Google Workspace/Emergent Auth dan terapkan identitas terverifikasi sebagai sumber otorisasi server.
 - Object storage privat untuk unggahan bukti aktual dan benchmarking, dengan akses reviewer yang berwenang.
 - Sambungkan OpenAI GPT-5.4 memakai API key pengguna, streaming respons, validasi JSON itinerary, serta penyimpanan rekomendasi yang telah direview.
 - Hubungkan hasil GPT-5.4 ke kandidat bandara, hotel, dan transportasi live saat akses provider perjalanan telah tersedia.
