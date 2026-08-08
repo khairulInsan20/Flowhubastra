@@ -90,6 +90,17 @@ def build_router(get_db):
         await db.rab_submissions.update_one({"id": submission_id}, {"$set": {"status": "SELESAI REALISASI", "updated_at": now_iso()}})
         return await db.rab_submissions.find_one({"id": submission_id}, {"_id": 0})
 
+    @router.post("/rab-submissions/{submission_id}/realization-action")
+    async def realization_action(submission_id: str, payload: RABAction, db: AsyncIOMotorDatabase = Depends(get_db)):
+        submission = await db.rab_submissions.find_one({"id": submission_id}, {"_id": 0})
+        if not submission or submission["status"] != "SELESAI REALISASI":
+            raise HTTPException(status_code=400, detail="Realisasi belum siap direview Sekretaris.")
+        if payload.actor_role != Role.SECRETARY:
+            raise HTTPException(status_code=403, detail="Hanya Sekretaris yang dapat mereview lampiran realisasi.")
+        status = "PERLU REVISI LAMPIRAN PIC" if payload.action == "revisi" else "BPH DIBUAT"
+        await db.rab_submissions.update_one({"id": submission_id}, {"$set": {"status": status, "component_notes": payload.component_notes, "updated_at": now_iso()}})
+        return await db.rab_submissions.find_one({"id": submission_id}, {"_id": 0})
+
     @router.post("/rab-submissions/{submission_id}/action")
     async def action_rab_submission(submission_id: str, payload: RABAction, db: AsyncIOMotorDatabase = Depends(get_db)):
         submission = await db.rab_submissions.find_one({"id": submission_id}, {"_id": 0})

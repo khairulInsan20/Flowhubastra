@@ -172,5 +172,5 @@ class RABSubmissionCreate(BaseModel):
 
 class RABAction(BaseModel):
     actor_role: Role
-    action: str = Field(pattern="^(approve|revisi|booked|spd_done)$")
+    action: str = Field(pattern="^(approve|revisi|booked|spd_done|bph_created)$")
     component_notes: dict = Field(default_factory=dict)
