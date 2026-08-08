@@ -129,5 +129,26 @@ class AiTravelPlanRequest(BaseModel):
         return self
 
 
+class BranchVisit(BaseModel):
+    visit_date: str
+    branch_name: str = Field(min_length=3, max_length=160)
+
+
+class LocalTransportLeg(BaseModel):
+    route: str = Field(min_length=4, max_length=240)
+    purpose: str = Field(min_length=3, max_length=100)
+
+
+class AiTravelRecommendationRequest(BaseModel):
+    stage: str = Field(pattern="^(ticket|hotel|local_transport)$")
+    origin: str = Field(min_length=2, max_length=120)
+    total_budget: int = Field(gt=0)
+    branch_visits: List[BranchVisit] = Field(min_length=1, max_length=20)
+    preference: str = Field(min_length=4, max_length=1000)
+    selected_ticket: str = Field(default="", max_length=1000)
+    selected_hotel: str = Field(default="", max_length=1000)
+    transport_legs: List[LocalTransportLeg] = Field(default_factory=list, max_length=12)
+
+
 class ApiMessage(BaseModel):
     message: str

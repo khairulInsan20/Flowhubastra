@@ -9,6 +9,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from models import (
     AllocationUpdate,
     AiTravelPlanRequest,
+    AiTravelRecommendationRequest,
     BookingCreate,
     MockUploadCreate,
     RealizationCreate,
@@ -19,7 +20,7 @@ from models import (
     WorkflowAction,
 )
 from store import DEMO_PROFILES, get_demo_profile, now_iso, public_trip, public_trips, unique_id
-from ai_service import stream_travel_plan
+from ai_service import stream_stage_recommendation, stream_travel_plan
 
 
 def build_router(get_db):
@@ -258,6 +259,20 @@ def build_router(get_db):
         ai_request_times[client_key] = [*recent, now]
         return StreamingResponse(
             stream_travel_plan(payload),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
+
+    @router.post("/ai/travel-recommendations/stream")
+    async def create_staged_ai_recommendation(payload: AiTravelRecommendationRequest):
+        client_key = "global"
+        now = monotonic()
+        recent = [stamp for stamp in ai_request_times.get(client_key, []) if now - stamp < 60]
+        if len(recent) >= 5:
+            raise HTTPException(status_code=429, detail="Terlalu banyak permintaan AI. Coba lagi dalam satu menit.")
+        ai_request_times[client_key] = [*recent, now]
+        return StreamingResponse(
+            stream_stage_recommendation(payload),
             media_type="text/event-stream",
             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
         )
