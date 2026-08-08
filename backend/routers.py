@@ -84,13 +84,16 @@ def build_router(get_db):
             "MENUNGGU KOORDINATOR": (Role.COORDINATOR, "MENUNGGU SPV"),
             "MENUNGGU SPV": (Role.SPV, "MENUNGGU MANAGER"),
             "MENUNGGU MANAGER": (Role.MANAGER, "MENUNGGU PEMESANAN"),
-            "MENUNGGU PEMESANAN": (Role.SECRETARY, "TIKET DAN HOTEL DIKONFIRMASI"),
+            "MENUNGGU PEMESANAN": (Role.SECRETARY, "MENUNGGU SPD KOORDINATOR"),
+            "MENUNGGU SPD KOORDINATOR": (Role.COORDINATOR, "SIAP REALISASI PIC"),
         }
         if submission["status"] not in flow:
             raise HTTPException(status_code=400, detail="Pengajuan tidak berada pada tahap tindakan.")
         expected, next_status = flow[submission["status"]]
         if payload.actor_role != expected:
             raise HTTPException(status_code=403, detail=f"Tahap ini hanya untuk {expected.value}.")
+        if submission["status"] == "MENUNGGU SPD KOORDINATOR" and payload.action != "spd_done":
+            raise HTTPException(status_code=422, detail="Koordinator perlu menyelesaikan SPD.")
         status = "PERLU REVISI PIC" if payload.action == "revisi" else next_status
         update = {"status": status, "component_notes": payload.component_notes, "updated_at": now_iso()}
         await db.rab_submissions.update_one({"id": submission_id}, {"$set": update})
