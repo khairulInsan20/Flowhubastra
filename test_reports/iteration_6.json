@@ -1,0 +1,40 @@
+{
+  "summary": "Frontend-only verification of three requested items and the SPD/Realisasi wiring. All 3 requested UI items PASS on public preview URL: (1) /ai-travel wizard hero image is hidden (CSS .wizard-hero img { display: none } and confirmed via Playwright img.is_visible()==False); (2) PIC Accounting /inbox rows for status 'PERLU REVISI PIC' render 'Revisi & ajukan ulang' with href='/ai-travel' and click actually opens travel-wizard-page; (3) Sekretaris Divisi /inbox rows for status 'MENUNGGU PEMESANAN' render 'Lihat rincian & pesan' with href='/rab-submissions/{id}' pointing to central RAB detail. Data-testids central-inbox-page, inbox-rab-{id}, open-inbox-rab-{id}, travel-wizard-page all present. Also inspected SPD/Realisasi wiring: backend defines statuses 'MENUNGGU SPD KOORDINATOR' and 'SIAP REALISASI PIC' plus POST /rab-submissions/{id}/resubmit, but frontend has NO UI wiring for either. This is confirmed missing, not inferred.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "CentralInboxPage - PIC revisi link", "issue": "Link points to /ai-travel without any rab_id/query param. TravelWizardPage starts a fresh wizard with hardcoded default state; it does not preload the submission being revised, so 'ajukan ulang' cannot actually re-submit the SAME RAB. User request states revision should reopen the same submission.", "selector": "[data-testid^='open-inbox-rab-']", "priority": "HIGH"},
+      {"component": "TravelWizardPage", "issue": "No effect to read a submission id (e.g. /ai-travel/:id or ?rabId=) and hydrate outbound/inbound/hotel/routes state. Resubmit API helper resubmitRabSubmission exists in api.js but is never called from any component.", "selector": "[data-testid='travel-wizard-page']", "priority": "HIGH"},
+      {"component": "Coordinator SPD action", "issue": "Backend requires action 'spd_done' to transition MENUNGGU SPD KOORDINATOR -> SIAP REALISASI PIC, but no page/button in the Koordinator role UI triggers it. There is no inbox/queue for MENUNGGU SPD KOORDINATOR.", "selector": "n/a", "priority": "HIGH"},
+      {"component": "RealizationPage", "issue": "Realisasi page still operates on legacy trips (getTrips) and does not consume rab_submissions with status 'SIAP REALISASI PIC'. PIC has no UI entry point to move a RAB from SIAP REALISASI PIC to completion using the centralized submissions.", "selector": "[data-testid='realization-page']", "priority": "HIGH"}
+    ],
+    "integration_issues": [
+      {"flow": "Revisi -> ajukan ulang", "issue": "Even if wizard were prefilled, no call to POST /api/rab-submissions/{id}/resubmit exists in the frontend. After PIC revises, the RAB stays in 'PERLU REVISI PIC'.", "affected_selectors": ["[data-testid='travel-wizard-page']"]},
+      {"flow": "SPD -> Realisasi", "issue": "Two backend status transitions (MENUNGGU PEMESANAN -> MENUNGGU SPD KOORDINATOR after mark-ticket-hotel-booked, and MENUNGGU SPD KOORDINATOR -> SIAP REALISASI PIC on spd_done) have no corresponding UI actions. End-to-end lifecycle is broken past 'MENUNGGU PEMESANAN'.", "affected_selectors": []}
+    ],
+    "design_issues": []
+  },
+  "test_report_links": ["/app/backend/tests/test_rab_submissions.py"],
+  "action_items": [
+    "Pass rab id through inbox -> wizard (e.g. Link to `/ai-travel/${item.id}`), add a route, and hydrate TravelWizardPage state from the fetched submission.",
+    "Add a submit/finalize button in the wizard that calls resubmitRabSubmission(id) when in revisi mode; show success toast and route back to /inbox.",
+    "Add Koordinator SPD queue UI: list rab_submissions with status MENUNGGU SPD KOORDINATOR and expose an action that POSTs {action: 'spd_done'} to /rab-submissions/{id}/action.",
+    "Rework RealizationPage (or add a new page) to consume rab_submissions with status SIAP REALISASI PIC so PIC can close out the workflow.",
+    "Optional: expose a 'Selesaikan SPD' button on the existing centralized RAB detail page when role=Koordinator and status=MENUNGGU SPD KOORDINATOR."
+  ],
+  "critical_code_review_comments": [
+    "CentralInboxPage.js and TravelWizardPage.js return massive single-line JSX (~1.5-6 KB per line). Very hard to review or diff; please format multi-line.",
+    "api.js exports resubmitRabSubmission that is never called - dead code indicates the resubmit UI was never actually wired.",
+    "TravelWizardPage uses hardcoded ticket/hotel arrays and dates ('2026-04-14'); real revisions cannot preserve original selections.",
+    "Realisasi and Monitoring pages still consume the legacy /api/trips collection while inbox uses /api/rab-submissions - two parallel data models with no unification.",
+    "CentralInboxPage filter only accepts a single status per role; MENUNGGU SPD KOORDINATOR and SIAP REALISASI PIC will never surface in any inbox."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "not tested (frontend-only per request)", "frontend": "3/3 requested UI assertions PASS; SPD->Realisasi UI confirmed MISSING"},
+  "test_credentials": "N/A - localStorage role selector (flowhub-demo-role).",
+  "seed_data_creation": "Reused existing PERLU REVISI PIC and MENUNGGU PEMESANAN records from prior iterations; no new seed data created.",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Requested three checks all PASS. Real gaps are: (a) revision does not reopen the same submission - the /ai-travel link carries no id and the wizard has no hydration/resubmit code; (b) SPD (Koordinator) and post-SPD Realisasi (PIC) have no UI. Backend endpoints/statuses exist. resubmitRabSubmission is defined in api.js but unused.",
+  "rca of the issue": "Header image bug: resolved via CSS `.wizard-hero img { display: none }` in TravelWizard.css - verified. Revision routing bug: CentralInboxPage builds Link `to='/ai-travel'` for PIC, which navigates but with no id/state. TravelWizardPage does not read any route param nor call resubmitRabSubmission - so 'ajukan ulang' cannot actually reopen or re-submit the same RAB. Also no UI exists for MENUNGGU SPD KOORDINATOR / SIAP REALISASI PIC transitions."
+}
