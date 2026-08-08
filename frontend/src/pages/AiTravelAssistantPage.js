@@ -129,8 +129,12 @@ export default function AiTravelAssistantPage() {
           const eventName = block.match(/^event: (.+)$/m)?.[1] || "message";
           const data = block.match(/^data: (.+)$/m)?.[1];
           if (eventName === "message" && data) {
-            const parsed = JSON.parse(data);
-            setAiPlan((current) => current + (parsed.delta || ""));
+            try {
+              const parsed = JSON.parse(data);
+              setAiPlan((current) => current + (parsed.delta || ""));
+            } catch (parseError) {
+              console.error("SSE AI response could not be parsed", parseError);
+            }
           }
           if (eventName === "error") toast.error(data || "AI belum dapat membuat rekomendasi.");
         });

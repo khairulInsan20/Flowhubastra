@@ -1,3 +1,4 @@
+from datetime import date
 from enum import Enum
 from typing import List, Optional
 
@@ -115,6 +116,17 @@ class AiTravelPlanRequest(BaseModel):
     transport_route: str = Field(min_length=2, max_length=200)
     transport_mode: str = Field(min_length=2, max_length=100)
     transport_estimate: int = Field(ge=0)
+
+    @model_validator(mode="after")
+    def validate_trip_dates(self):
+        try:
+            start = date.fromisoformat(self.start_date)
+            end = date.fromisoformat(self.end_date)
+        except ValueError as error:
+            raise ValueError("Tanggal STO harus menggunakan format ISO YYYY-MM-DD.") from error
+        if start > end:
+            raise ValueError("Tanggal mulai STO tidak boleh setelah tanggal selesai.")
+        return self
 
 
 class ApiMessage(BaseModel):

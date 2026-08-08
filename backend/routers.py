@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from time import monotonic
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -23,6 +24,7 @@ from ai_service import stream_travel_plan
 
 def build_router(get_db):
     router = APIRouter(prefix="/api")
+    ai_request_times: dict[str, list[float]] = {}
 
     async def get_trip_or_404(trip_id: str, db: AsyncIOMotorDatabase) -> dict:
         trip = await public_trip(db, trip_id)
@@ -248,6 +250,12 @@ def build_router(get_db):
 
     @router.post("/ai/travel-plan/stream")
     async def create_ai_travel_plan(payload: AiTravelPlanRequest):
+        client_key = "global"
+        now = monotonic()
+        recent = [stamp for stamp in ai_request_times.get(client_key, []) if now - stamp < 60]
+        if len(recent) >= 5:
+            raise HTTPException(status_code=429, detail="Terlalu banyak permintaan AI. Coba lagi dalam satu menit.")
+        ai_request_times[client_key] = [*recent, now]
         return StreamingResponse(
             stream_travel_plan(payload),
             media_type="text/event-stream",

@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import uuid
 from typing import AsyncGenerator
@@ -16,6 +17,8 @@ Catatan verifikasi. Show all money in Indonesian Rupiah. Include a realistic cav
 that the PIC and Secretary must verify transport and hotel availability before booking.
 Respect the selected airport, hotel, and local transport route as the primary choice,
 then offer two or three alternative cost-saving approaches."""
+
+logger = logging.getLogger(__name__)
 
 
 def build_prompt(payload: AiTravelPlanRequest) -> str:
@@ -65,4 +68,5 @@ async def stream_travel_plan(payload: AiTravelPlanRequest) -> AsyncGenerator[str
             elif isinstance(event, StreamDone):
                 yield "event: done\ndata: {}\n\n"
     except Exception:
+        logger.exception("GPT-5.4 travel-plan stream failed")
         yield "event: error\ndata: Gagal membuat rekomendasi AI. Silakan coba lagi.\n\n"

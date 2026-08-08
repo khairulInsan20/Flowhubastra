@@ -32,6 +32,8 @@ PIC Accounting melakukan perencanaan dan realisasi biaya Stock Take Opname (STO)
 - Endpoint CRUD dasar dan validasi 4xx untuk input proporsi salah atau peran yang tidak berwenang.
 - Halaman **AI Travel Assistant**: menangkap jadwal, asal, cabang, anggaran, dan preferensi; menampilkan struktur itinerary, biaya, serta alternatif hemat yang akan dihasilkan GPT-5.4.
 - Status koneksi AI terlihat jelas di aplikasi. Pengaktifan respons GPT-5.4 menunggu OpenAI API key milik pengguna.
+- GPT-5.4 kini aktif melalui Emergent LLM key. Setelah PIC memilih bandara, hotel, dan rute transport, aplikasi melakukan streaming itinerary Bahasa Indonesia, estimasi item biaya, alternatif hemat, serta catatan verifikasi ke layar review.
+- Endpoint AI memvalidasi tanggal/anggaran, membatasi lima permintaan per menit, dan tidak mengklaim bahwa estimasi merupakan harga atau ketersediaan live.
 - AI Travel Assistant kini memakai wizard keputusan berurutan: pilih bandara/rekomendasi gerbang perjalanan, pilih penginapan berdasarkan keputusan itu, lalu pilih transportasi lokal berdasarkan bandara dan hotel terpilih sebelum review RAB.
 - Otorisasi demonstrasi berbasis peran diterapkan: Koordinator membuat jadwal STO pada wilayah penugasannya dan menetapkan PIC; data nama, email, dan telepon PIC terisi dari direktori profil contoh; PIC menetapkan alokasi, menggunakan AI, mengirim realisasi, serta melihat pesanan/revisi miliknya.
 - Menu Monitoring RAB dan Monitoring Anggaran dibatasi bagi Koordinator/SPV/Manager; Inbox Pemesanan dibatasi bagi PIC/Sekretaris; Sekretaris menerima daftar pemesanan untuk checklist; revisi RAB membuat notifikasi inbox PIC.
