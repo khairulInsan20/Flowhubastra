@@ -1,7 +1,5 @@
 import "@/App.css";
 import "@/TravelWizard.css";
-import "@/TravelWizard.css";
-import "@/TravelWizard.css";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster } from "sonner";
 import Shell from "@/components/Shell";

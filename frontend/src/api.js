@@ -14,6 +14,7 @@ export const getRabSubmissions = () => api.get("/rab-submissions").then((respons
 export const actionRabSubmission = (id, payload) => api.post(`/rab-submissions/${id}/action`, payload).then((response) => response.data);
 export const resubmitRabSubmission = (id) => api.post(`/rab-submissions/${id}/resubmit`).then((response) => response.data);
 export const completeRabRealization = (id) => api.post(`/rab-submissions/${id}/realization-complete`).then((response) => response.data);
+export const actionRabRealization = (id, payload) => api.post(`/rab-submissions/${id}/realization-action`, payload).then((response) => response.data);
 export const createTrip = (payload) => api.post("/trips", payload).then((response) => response.data);
 export const submitTrip = (tripId, profileId = "") => api.post(`/trips/${tripId}/submit`, null, { params: { actor_role: "PIC Accounting", pic_profile_id: profileId } }).then((response) => response.data);
 export const getRecommendations = (payload) => api.post("/recommendations", payload).then((response) => response.data);
