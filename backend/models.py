@@ -168,3 +168,9 @@ class RABSubmissionCreate(BaseModel):
     title: str
     items: List[dict]
     notes: dict = Field(default_factory=dict)
+
+
+class RABAction(BaseModel):
+    actor_role: Role
+    action: str = Field(pattern="^(approve|revisi|booked)$")
+    component_notes: dict = Field(default_factory=dict)

@@ -11,6 +11,7 @@ export const createSchedule = (payload) => api.post("/trips/schedule", payload.d
 export const setAllocation = (tripId, payload) => api.patch(`/trips/${tripId}/allocation`, payload).then((response) => response.data);
 export const getNotifications = (profileId) => api.get("/notifications", { params: { profile_id: profileId } }).then((response) => response.data);
 export const getRabSubmissions = () => api.get("/rab-submissions").then((response) => response.data);
+export const actionRabSubmission = (id, payload) => api.post(`/rab-submissions/${id}/action`, payload).then((response) => response.data);
 export const createTrip = (payload) => api.post("/trips", payload).then((response) => response.data);
 export const submitTrip = (tripId, profileId = "") => api.post(`/trips/${tripId}/submit`, null, { params: { actor_role: "PIC Accounting", pic_profile_id: profileId } }).then((response) => response.data);
 export const getRecommendations = (payload) => api.post("/recommendations", payload).then((response) => response.data);

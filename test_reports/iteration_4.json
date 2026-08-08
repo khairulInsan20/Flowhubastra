@@ -1,0 +1,66 @@
+{
+  "summary": "End-to-end verification of centralized RAB approval workflow (Coordinator -> SPV -> Manager -> Sekretaris) on both backend and frontend. Backend: expanded /app/backend/tests/test_rab_submissions.py with 7 new workflow tests (TestRabActionWorkflow) covering full happy path, wrong-role 403, revision at every stage, invalid action value, 404 on missing submission. All 10 pytest tests PASS. Frontend (Playwright on public URL): seeded 3 fresh RAB submissions and drove the full chain via the role selector and RabSubmissionDetailPage. Status transitioned MENUNGGU KOORDINATOR -> MENUNGGU SPV -> MENUNGGU MANAGER -> MENUNGGU PEMESANAN -> TIKET DAN HOTEL DIKONFIRMASI. Buttons approve-rab-button, revise-rab-button, component-revision-note-{i}, mark-ticket-hotel-booked-button all render for the correct role only; Sekretaris sees only booked button, others see approve+revise. Revision writes PERLU REVISI PIC and persists component_notes as expected. PIC Accounting on a MENUNGGU stage sees details+proofs but no action buttons (correctly view-only).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Sekretaris Divisi entry point to fully-approved RAB",
+        "issue": "InboxPage.js does not fetch /api/rab-submissions and shows no link to /rab-submissions/{id}. After a RAB reaches status MENUNGGU PEMESANAN, Sekretaris has NO way in the UI to discover or open it - they must know the URL. The 'Perlu dipesankan' panel only lists trip-based bookings (getTrips filtered by MENUNGGU PEMESANAN), not central rab_submissions. Verified: Secretary Inbox content contains zero '/rab-submissions/' links and does not mention seeded RAB titles.",
+        "affected_selectors": ["booking-inbox-page", "booking-queue-panel"]
+      },
+      {
+        "flow": "Approvals queue - role-based filtering missing",
+        "issue": "ApprovalsPage.js (central-rab-queue) renders ALL rab_submissions regardless of status. As Koordinator we observed rows with status MENUNGGU MANAGER, PERLU REVISI PIC, and TIKET DAN HOTEL DIKONFIRMASI in the same queue - reviewer sees items they cannot act on. Should filter submissions by current role's expected status (MENUNGGU KOORDINATOR for Koordinator, etc.) and/or hide fully-approved and revised submissions.",
+        "affected_selectors": ["central-rab-queue", "view-rab-review-*"]
+      },
+      {
+        "flow": "Sekretaris Divisi cannot list RAB submissions from Approvals",
+        "issue": "ApprovalsPage guards on role in ['Koordinator','SPV','Manager'] and returns AccessDenied for Sekretaris. Since Inbox also does not surface centralized RAB submissions, Sekretaris has no listing entry point for RABs at status MENUNGGU PEMESANAN.",
+        "affected_selectors": ["approvals-page"]
+      }
+    ],
+    "design_issues": [
+      {
+        "screen": "Role selector persistence",
+        "issues": ["Role state does not survive full page reloads (on direct URL open, role resets to 'PIC Accounting'). Persist to localStorage or query param so that shareable deep links to /rab-submissions/{id} keep the reviewer role."]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_rab_submissions.py",
+    "/app/test_reports/pytest/rab_action_results.xml"
+  ],
+  "action_items": [
+    "Add central rab_submissions surfacing to Sekretaris Divisi's InboxPage (fetch getRabSubmissions and list items with status === 'MENUNGGU PEMESANAN', linking to /rab-submissions/{id}).",
+    "Filter ApprovalsPage's central-rab-queue by the current role's expected status (or at minimum exclude terminal statuses TIKET DAN HOTEL DIKONFIRMASI and PERLU REVISI PIC).",
+    "Consider allowing Sekretaris Divisi on ApprovalsPage limited to MENUNGGU PEMESANAN entries (or provide equivalent listing on Inbox).",
+    "Persist the selected role (localStorage) so direct navigation to /rab-submissions/{id} preserves reviewer role.",
+    "Consider RABSubmissionCreate stricter validation: title min_length, items min_length=1, each item schema (proof_url, label required)."
+  ],
+  "critical_code_review_comments": [
+    "routers.py action_rab_submission overwrites component_notes on every action; if Koordinator adds notes then SPV approves without notes, the previous notes are wiped. Consider merging into a per-role notes structure (e.g. {koordinator: {...}, spv: {...}}) or appending an approval history.",
+    "RABSubmissionCreate model uses items: List[dict] with no schema - server accepts arbitrary shapes; add a Pydantic ItemModel with proof_url, label, price, note fields for safety.",
+    "action_rab_submission returns the raw stored document (uses find_one), fine, but no audit trail is written - unlike trips/{id}/approval which pushes to approval_history. Recommend adding an approvals[] array to rab_submissions with {role, action, at, notes}.",
+    "RabSubmissionDetailPage.js is a single-line JSX return (~150 chars) which hurts readability and code review; also relies on stringly-typed role checks - centralize role constants.",
+    "ApprovalsPage & InboxPage duplicate role-guard patterns; consider a RequireRole wrapper component.",
+    "Backend has no endpoint GET /api/rab-submissions/{id} - detail page fetches full list and finds locally. Add GET /api/rab-submissions/{submission_id} for efficient detail loads.",
+    "flow dict in action_rab_submission does not handle PERLU REVISI PIC state - once revised, submission is stuck at 'PERLU REVISI PIC' with no resubmit endpoint (PIC has no way to push it back to MENUNGGU KOORDINATOR)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_rab_submissions.py"
+  ],
+  "success_rate": {
+    "backend": "100% (10/10 pytest)",
+    "frontend": "100% for functional workflow; gating gaps documented above"
+  },
+  "test_credentials": "N/A - demo role selector (PIC Accounting / Koordinator / SPV / Manager / Sekretaris Divisi).",
+  "seed_data_creation": "Multiple TEST_RAB_* submissions created directly via POST /api/rab-submissions during testing. Some remain in Mongo (rab-* ids); consider a cleanup endpoint or delete via DB.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Backend action endpoint /api/rab-submissions/{id}/action is fully working: enforces role-per-stage (403), supports approve/revisi at Koordinator/SPV/Manager and booked at Sekretaris, writes component_notes and status. Frontend RabSubmissionDetailPage correctly gates buttons via canAct (role + status match) and exposes testids: approve-rab-button, revise-rab-button, component-revision-note-{index}, mark-ticket-hotel-booked-button, back-to-rab-list-link, rab-submission-detail-page. Main open gaps for main agent: (1) Sekretaris entry point in InboxPage (currently no path to fully-approved RABs), (2) ApprovalsPage central-rab-queue does not filter by current role's expected status, (3) role persistence across full reloads. All pytest at /app/backend/tests/test_rab_submissions.py should keep passing after fixes.",
+  "rca of the issue": "The centralized RAB workflow backend is correctly implemented per review request. The 'frontend gating / Inbox / Secretary entry-point gaps' called out in the request are confirmed: (a) InboxPage.js never calls getRabSubmissions, so Sekretaris cannot see rab_submissions with status MENUNGGU PEMESANAN in the UI; (b) ApprovalsPage.js central-rab-queue lists submissions with no status filter, causing reviewers to see out-of-scope items; (c) ApprovalsPage denies access to Sekretaris Divisi. Reproduction: seed a submission, drive it through Koordinator/SPV/Manager approvals, then switch role to Sekretaris Divisi and open /inbox - the RAB is invisible. Mitigation: in InboxPage.js add a submissions state fetched via getRabSubmissions and render 'Perlu dipesankan (RAB)' panel with links to /rab-submissions/{id} for status === 'MENUNGGU PEMESANAN'; in ApprovalsPage.js filter submissions by role-expected status (MENUNGGU KOORDINATOR/SPV/MANAGER)."
+}

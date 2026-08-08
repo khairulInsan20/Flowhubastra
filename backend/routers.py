@@ -14,6 +14,7 @@ from models import (
     MockUploadCreate,
     RealizationCreate,
     RABSubmissionCreate,
+    RABAction,
     Role,
     ScheduleCreate,
     TravelRecommendationQuery,
@@ -73,6 +74,27 @@ def build_router(get_db):
     @router.get("/rab-submissions")
     async def list_rab_submissions(db: AsyncIOMotorDatabase = Depends(get_db)):
         return await db.rab_submissions.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+
+    @router.post("/rab-submissions/{submission_id}/action")
+    async def action_rab_submission(submission_id: str, payload: RABAction, db: AsyncIOMotorDatabase = Depends(get_db)):
+        submission = await db.rab_submissions.find_one({"id": submission_id}, {"_id": 0})
+        if not submission:
+            raise HTTPException(status_code=404, detail="Pengajuan RAB tidak ditemukan.")
+        flow = {
+            "MENUNGGU KOORDINATOR": (Role.COORDINATOR, "MENUNGGU SPV"),
+            "MENUNGGU SPV": (Role.SPV, "MENUNGGU MANAGER"),
+            "MENUNGGU MANAGER": (Role.MANAGER, "MENUNGGU PEMESANAN"),
+            "MENUNGGU PEMESANAN": (Role.SECRETARY, "TIKET DAN HOTEL DIKONFIRMASI"),
+        }
+        if submission["status"] not in flow:
+            raise HTTPException(status_code=400, detail="Pengajuan tidak berada pada tahap tindakan.")
+        expected, next_status = flow[submission["status"]]
+        if payload.actor_role != expected:
+            raise HTTPException(status_code=403, detail=f"Tahap ini hanya untuk {expected.value}.")
+        status = "PERLU REVISI PIC" if payload.action == "revisi" else next_status
+        update = {"status": status, "component_notes": payload.component_notes, "updated_at": now_iso()}
+        await db.rab_submissions.update_one({"id": submission_id}, {"$set": update})
+        return await db.rab_submissions.find_one({"id": submission_id}, {"_id": 0})
 
     @router.get("/trips")
     async def list_trips(db: AsyncIOMotorDatabase = Depends(get_db)):
