@@ -20,7 +20,7 @@ from models import (
     WorkflowAction,
 )
 from store import DEMO_PROFILES, get_demo_profile, now_iso, public_trip, public_trips, unique_id
-from ai_service import stream_stage_recommendation, stream_travel_plan
+from ai_service import stream_final_itinerary, stream_stage_recommendation, stream_travel_plan
 
 
 def build_router(get_db):
@@ -273,6 +273,14 @@ def build_router(get_db):
         ai_request_times[client_key] = [*recent, now]
         return StreamingResponse(
             stream_stage_recommendation(payload),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
+
+    @router.post("/ai/final-itinerary/stream")
+    async def create_final_itinerary(payload: AiTravelRecommendationRequest):
+        return StreamingResponse(
+            stream_final_itinerary(payload),
             media_type="text/event-stream",
             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
         )

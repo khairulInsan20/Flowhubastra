@@ -1,0 +1,26 @@
+{
+  "summary": "End-to-end verification of the revised staged AI Travel Assistant (Gemini 3.5 Flash + Google Search for ticket/hotel/local-transport; GPT-5.4 for final itinerary). Backend pytest suite (5/5 passing in 121s): ticket stage SSE returns 2000+ chars of Gemini-grounded text, hotel stage streams substantial content, final GPT itinerary streams >200 chars with Indonesian markers (Ringkasan/Itinerary/Estimasi), and invalid payloads (bad stage, empty branch_visits) correctly rejected with 422. Frontend Playwright verified: PIC role reaches /ai-travel; coordinator-budget-readonly renders Rp 60.000.000 with readonly attribute; all five transport-leg checkboxes (home-hub, hub-branch, branch-branch, branch-hotel, hotel-hub) present; hotel button disabled until a ticket selection is typed then becomes enabled; ticket AI output populated 2680 chars within ~40s; switching role selector to Manager without reload shows access-denied-message immediately.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_ai_stage_recommendations.py",
+    "/app/backend/tests/test_ai_travel_plan.py",
+    "/app/test_reports/pytest/ai_stage.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "ai_service.py stream_stage_recommendation logs its exceptions with the message 'GPT-5.4 staged browsing recommendation failed' even though it uses Gemini 3.5 Flash — misleading log message; update to reference Gemini for accurate observability.",
+    "routers.py rate-limits /ai/travel-recommendations/stream and /ai/travel-plan/stream (5/min shared bucket) but the new /ai/final-itinerary/stream endpoint has NO rate limit at all — same paid LLM should be equally throttled.",
+    "AiTravelRecommendationRequest does not validate branch_visits[].visit_date as ISO date — malformed strings pass through to the LLM prompt untouched.",
+    "StagedTravelAssistantPage.js: transport 'legs' array sent to backend uses hardcoded purpose 'Perjalanan dinas STO' for every leg; the model prompt formatter shows per-leg purpose, so distinct leg semantics (e.g. 'home->hub' vs 'branch->hotel') are lost in the prompt.",
+    "runFinalPlan requires transportPlan (i.e. user must have run stage 3) — reasonable — but there is no guard requiring the user to also confirm/type a chosen transport option; users can generate a final itinerary based purely on the last AI browse output without an explicit selection field like the ticket/hotel stages have.",
+    "SSE endpoints remain unauthenticated; a demo role-selector on the frontend is not a real access gate. Anyone with the URL can call the endpoint and consume paid LLM tokens."
+  ],
+  "updated_files": ["/app/backend/tests/test_ai_stage_recommendations.py"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "N/A - role selector is demo mode",
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Backend regression tests: /app/backend/tests/test_ai_stage_recommendations.py (staged Gemini + GPT final endpoints) and /app/backend/tests/test_ai_travel_plan.py (legacy single-shot GPT plan). Run with `python -m pytest tests/ -o addopts='' --junitxml=...`. Grounded Gemini stage calls take ~30-60s each; the full staged suite runs in ~2 minutes. Key testids on StagedTravelAssistantPage: coordinator-budget-readonly, browse-ticket-recommendations-button, ticket-ai-output, selected-ticket-input, browse-hotel-recommendations-button, hotel-ai-output, selected-hotel-input, transport-leg-{home-hub|hub-branch|branch-branch|branch-hotel|hotel-hub}-checkbox, browse-local-transport-button, generate-final-itinerary-button, final-itinerary-output, access-denied-message. Role switch is reactive (no reload) via useOutletContext."
+}

@@ -113,15 +113,8 @@ async def stream_stage_recommendation(
             session_id=f"sto-stage-{uuid.uuid4().hex}",
             system_message=SYSTEM_MESSAGE,
         )
-        .with_model("openai", "gpt-5.4")
-        .with_params(
-            web_search_options={
-                "search_context_size": "medium",
-                "user_location": {"type": "approximate", "approximate": {"country": "ID"}},
-            }
-            ,
-            allowed_openai_params=["web_search_options"],
-        )
+        .with_model("gemini", "gemini-3.5-flash")
+        .with_tools([{"googleSearch": {}}])
     )
     try:
         async for event in chat.stream_message(UserMessage(text=build_stage_prompt(payload))):
@@ -132,3 +125,33 @@ async def stream_stage_recommendation(
     except Exception:
         logger.exception("GPT-5.4 staged browsing recommendation failed")
         yield "event: error\ndata: Gagal mencari rekomendasi AI. Silakan coba lagi.\n\n"
+
+
+async def stream_final_itinerary(
+    payload: AiTravelRecommendationRequest,
+) -> AsyncGenerator[str, None]:
+    api_key = os.environ.get("EMERGENT_LLM_KEY")
+    if not api_key:
+        yield "event: error\ndata: Konfigurasi AI belum tersedia.\n\n"
+        return
+    chat = LlmChat(
+        api_key=api_key,
+        session_id=f"sto-final-{uuid.uuid4().hex}",
+        system_message=SYSTEM_MESSAGE,
+    ).with_model("openai", "gpt-5.4")
+    prompt = f"""Susun itinerary STO final dalam Bahasa Indonesia berdasarkan keputusan PIC berikut.
+Tiket terpilih: {payload.selected_ticket}
+Hotel terpilih: {payload.selected_hotel}
+Rute transport lokal: {', '.join(leg.route for leg in payload.transport_legs)}
+Jadwal cabang: {', '.join(f'{item.visit_date} {item.branch_name}' for item in payload.branch_visits)}
+Budget Koordinator: Rp{payload.total_budget:,}
+Berikan itinerary per hari, estimasi total biaya, risiko overbudget, dan catatan verifikasi."""
+    try:
+        async for event in chat.stream_message(UserMessage(text=prompt)):
+            if isinstance(event, TextDelta):
+                yield f"data: {json.dumps({'delta': event.content})}\n\n"
+            elif isinstance(event, StreamDone):
+                yield "event: done\ndata: {}\n\n"
+    except Exception:
+        logger.exception("GPT-5.4 final itinerary stream failed")
+        yield "event: error\ndata: Gagal menyusun itinerary akhir. Silakan coba lagi.\n\n"
