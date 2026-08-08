@@ -13,6 +13,7 @@ import InboxPage from "@/pages/InboxPage";
 import MonitoringPage from "@/pages/MonitoringPage";
 import TravelReviewPage from "@/pages/TravelReviewPage";
 import TravelWizardPage from "@/pages/TravelWizardPage";
+import RabSubmissionDetailPage from "@/pages/RabSubmissionDetailPage";
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
             <Route path="monitoring" element={<MonitoringPage />} />
             <Route path="ai-travel" element={<TravelWizardPage />} />
             <Route path="ai-travel/review" element={<TravelReviewPage />} />
+            <Route path="rab-submissions/:submissionId" element={<RabSubmissionDetailPage />} />
           </Route>
         </Routes>
       </BrowserRouter>
