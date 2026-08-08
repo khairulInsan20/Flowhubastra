@@ -162,3 +162,9 @@ class AiTravelRecommendationRequest(BaseModel):
 
 class ApiMessage(BaseModel):
     message: str
+
+
+class RABSubmissionCreate(BaseModel):
+    title: str
+    items: List[dict]
+    notes: dict = Field(default_factory=dict)

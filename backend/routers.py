@@ -62,6 +62,17 @@ def build_router(get_db):
     async def list_notifications(profile_id: str, db: AsyncIOMotorDatabase = Depends(get_db)):
         return await db.notifications.find({"profile_id": profile_id}, {"_id": 0}).sort("created_at", -1).to_list(50)
 
+    @router.post("/rab-submissions", status_code=201)
+    async def create_rab_submission(payload: RABSubmissionCreate, db: AsyncIOMotorDatabase = Depends(get_db)):
+        document = payload.model_dump()
+        document.update({"id": unique_id("rab"), "status": "MENUNGGU KOORDINATOR", "created_at": now_iso()})
+        await db.rab_submissions.insert_one(document.copy())
+        return {key: value for key, value in document.items() if key != "_id"}
+
+    @router.get("/rab-submissions")
+    async def list_rab_submissions(db: AsyncIOMotorDatabase = Depends(get_db)):
+        return await db.rab_submissions.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+
     @router.get("/trips")
     async def list_trips(db: AsyncIOMotorDatabase = Depends(get_db)):
         return await public_trips(db)
