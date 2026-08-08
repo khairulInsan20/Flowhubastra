@@ -75,6 +75,13 @@ def build_router(get_db):
     async def list_rab_submissions(db: AsyncIOMotorDatabase = Depends(get_db)):
         return await db.rab_submissions.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
 
+    @router.get("/rab-history")
+    async def list_rab_history(db: AsyncIOMotorDatabase = Depends(get_db)):
+        return await db.rab_submissions.find(
+            {"status": {"$in": ["SELESAI REALISASI", "HISTORY"]}},
+            {"_id": 0},
+        ).sort("updated_at", -1).to_list(100)
+
     @router.post("/rab-submissions/{submission_id}/action")
     async def action_rab_submission(submission_id: str, payload: RABAction, db: AsyncIOMotorDatabase = Depends(get_db)):
         submission = await db.rab_submissions.find_one({"id": submission_id}, {"_id": 0})
