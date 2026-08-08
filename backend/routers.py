@@ -13,6 +13,7 @@ from models import (
     BookingCreate,
     MockUploadCreate,
     RealizationCreate,
+    RABSubmissionCreate,
     Role,
     ScheduleCreate,
     TravelRecommendationQuery,
