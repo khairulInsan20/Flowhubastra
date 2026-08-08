@@ -9,7 +9,7 @@ import DashboardPage from "@/pages/DashboardPage";
 import PlanPage from "@/pages/PlanPage";
 import ApprovalsPage from "@/pages/ApprovalsPage";
 import RealizationPage from "@/pages/RealizationPage";
-import InboxPage from "@/pages/InboxPage";
+import CentralInboxPage from "@/pages/CentralInboxPage";
 import MonitoringPage from "@/pages/MonitoringPage";
 import TravelReviewPage from "@/pages/TravelReviewPage";
 import TravelWizardPage from "@/pages/TravelWizardPage";
@@ -25,7 +25,7 @@ function App() {
             <Route path="rencana" element={<PlanPage />} />
             <Route path="persetujuan" element={<ApprovalsPage />} />
             <Route path="realisasi" element={<RealizationPage />} />
-            <Route path="inbox" element={<InboxPage />} />
+            <Route path="inbox" element={<CentralInboxPage />} />
             <Route path="monitoring" element={<MonitoringPage />} />
             <Route path="ai-travel" element={<TravelWizardPage />} />
             <Route path="ai-travel/review" element={<TravelReviewPage />} />
