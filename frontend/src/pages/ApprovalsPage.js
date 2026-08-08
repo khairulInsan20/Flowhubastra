@@ -15,7 +15,8 @@ export default function ApprovalsPage() {
   const [submissions, setSubmissions] = useState([]);
   const load = () => getTrips().then(setTrips).catch(() => toast.error("Daftar review belum dapat dimuat."));
   useEffect(() => { load(); }, []);
-  useEffect(() => { getRabSubmissions().then(setSubmissions); }, []);
+  useEffect(() => { getRabSubmissions().then((items) => setSubmissions(items.filter((submission) => (role === "Koordinator" && submission.status === "MENUNGGU KOORDINATOR") || (role === "SPV" && submission.status === "MENUNGGU SPV") || (role === "Manager" && submission.status === "MENUNGGU MANAGER")))); }, [role]);
+  const centralQueue = submissions.filter((submission) => (role === "Koordinator" && submission.status === "MENUNGGU KOORDINATOR") || (role === "SPV" && submission.status === "MENUNGGU SPV") || (role === "Manager" && submission.status === "MENUNGGU MANAGER"));
   if (!["Koordinator", "SPV", "Manager"].includes(role)) {
     return <AccessDenied feature="Monitoring RAB" roles="Koordinator, SPV, dan Manager" />;
   }

@@ -25,7 +25,7 @@ const navigation = [
 const roles = ["PIC Accounting", "Koordinator", "SPV", "Manager", "Sekretaris Divisi"];
 
 export default function Shell() {
-  const [role, setRole] = useState("PIC Accounting");
+  const [role, setRole] = useState(() => localStorage.getItem("flowhub-demo-role") || "PIC Accounting");
   const profileId = role === "PIC Accounting" ? "pic-nadia" : role === "Koordinator" ? "coord-jabar" : "";
 
   return (
@@ -69,7 +69,7 @@ export default function Shell() {
             <select
               id="role-selector"
               value={role}
-              onChange={(event) => setRole(event.target.value)}
+              onChange={(event) => { localStorage.setItem("flowhub-demo-role", event.target.value); setRole(event.target.value); }}
               data-testid="role-selector"
             >
               {roles.map((item) => <option key={item} value={item}>{item}</option>)}
