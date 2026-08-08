@@ -20,6 +20,7 @@ const navigation = [
   { label: "Realisasi", to: "/realisasi", icon: Receipt, roles: ["PIC Accounting"] },
   { label: "Inbox Pemesanan", to: "/inbox", icon: Files, roles: ["PIC Accounting", "Sekretaris Divisi"] },
   { label: "Monitoring Anggaran", to: "/monitoring", icon: ChartLineUp, roles: ["Koordinator", "SPV", "Manager"] },
+  { label: "History", to: "/history", icon: Files, roles: ["PIC Accounting", "Koordinator", "SPV", "Manager", "Sekretaris Divisi"] },
 ];
 
 const roles = ["PIC Accounting", "Koordinator", "SPV", "Manager", "Sekretaris Divisi"];

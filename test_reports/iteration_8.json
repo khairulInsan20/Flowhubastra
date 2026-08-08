@@ -1,0 +1,43 @@
+{
+  "summary": "Backend + frontend verification of the centralized RAB workflow closure (History, Coordinator SPD checklist, PIC Realisasi, PIC/Sekretaris inbox). All 5 requested behaviors PASS end-to-end. Live-drive on public URL: created rab-ced55b972b, marched it Koordinator->SPV->Manager->Sekretaris(booked)->Koordinator(spd_done) via API and UI, then completed realisasi from /realisasi, and it appeared in /history. Backend tests: 9/9 pass in /app/backend/tests/test_rab_workflow.py.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/rab-submissions", "issue": "Legacy 'TIKET DAN HOTEL DIKONFIRMASI' rows (5 in current DB) still returned; they are from a superseded workflow and are surfaced in Sekretaris inbox by the current status filter. Consider migration or explicit history treatment."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "CentralInboxPage (PIC)", "issue": "Every PIC row - including SIAP REALISASI PIC and MENUNGGU SPD KOORDINATOR - renders identical CTA 'Revisi & ajukan ulang' with href='/ai-travel'. History/informational statuses should not carry the Revisi CTA; SIAP REALISASI PIC should route to /realisasi (or at minimum be labeled 'Lihat realisasi').", "selector": "[data-testid^='open-inbox-rab-']", "priority": "HIGH"},
+      {"component": "CentralInboxPage (Sekretaris)", "issue": "Booked history rows (MENUNGGU SPD KOORDINATOR, TIKET DAN HOTEL DIKONFIRMASI) mixed with actionable MENUNGGU PEMESANAN rows using the same CTA - no visual grouping between actionable vs history.", "selector": "[data-testid='central-inbox-queue']", "priority": "MEDIUM"},
+      {"component": "SpdMonitoringPage", "issue": "Single-line JSX return (hard to review); no confirmation dialog before checklist action; no error toast on failure.", "selector": "[data-testid='spd-monitoring-page']", "priority": "LOW"},
+      {"component": "CentralRealizationPage", "issue": "File input is present but never uploaded/validated - completeRabRealization is called without any receipt payload. Task note said 'dummy proof metadata is expected' so this is acceptable, but the input is misleading UX.", "selector": "[data-testid^='realization-proof-']", "priority": "LOW"},
+      {"component": "HistoryPage", "issue": "No filters, no timestamp column, no status badge distinction - just title + status. Adequate as MVP.", "selector": "[data-testid='history-page']", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "CentralInboxPage", "issues": ["Actionable vs informational rows visually indistinguishable"]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_rab_workflow.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [
+    "In CentralInboxPage, branch CTA per status: PERLU REVISI PIC -> /ai-travel Revisi; SIAP REALISASI PIC -> /realisasi 'Selesaikan realisasi'; MENUNGGU SPD KOORDINATOR/TIKET DAN HOTEL DIKONFIRMASI -> informational (no CTA or 'Lihat detail').",
+    "Split inbox into 'Perlu tindakan' vs 'Riwayat' groups with distinct headings and data-testids.",
+    "Backfill legacy TIKET DAN HOTEL DIKONFIRMASI submissions to MENUNGGU SPD KOORDINATOR or expose them as history."
+  ],
+  "critical_code_review_comments": [
+    "All four target pages (SpdMonitoringPage, CentralRealizationPage, HistoryPage, CentralInboxPage) return single-line JSX; readability suffers.",
+    "CentralRealizationPage: proof file is captured but never sent to backend; completeRabRealization has no payload - misleading UX.",
+    "Backend uses two parallel data models (trips + rab_submissions); the centralized flow is complete on rab_submissions but /trips endpoints/pages remain and can confuse future maintainers.",
+    "action_rab_submission: the 'booked' action check is implicit (falls into 'else: next_status'); consider validating (status,action) pairs explicitly.",
+    "resubmit_rab_submission endpoint exists but resubmitRabSubmission caller was still not wired from the wizard as of last iteration - verify."
+  ],
+  "updated_files": ["/app/backend/tests/test_rab_workflow.py"],
+  "success_rate": {"backend": "9/9 (100%)", "frontend": "5/5 requested behaviors functionally pass; UX branching issues remain"},
+  "test_credentials": "N/A - localStorage flowhub-demo-role.",
+  "seed_data_creation": "Live-created rab-ced55b972b (SELESAI REALISASI) and rab-* SIAP REALISASI PIC fixtures via API during test.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Centralized workflow lifecycle is now complete: MENUNGGU KOORDINATOR -> MENUNGGU SPV -> MENUNGGU MANAGER -> MENUNGGU PEMESANAN -> MENUNGGU SPD KOORDINATOR -> SIAP REALISASI PIC -> SELESAI REALISASI. Endpoints POST /rab-submissions/{id}/action (booked, spd_done) and POST /rab-submissions/{id}/realization-complete + GET /rab-history all working. Pages: /monitoring (Koordinator, data-testid=spd-monitoring-page, complete-spd-{id}), /realisasi (PIC, data-testid=central-realization-page, complete-realization-{id}), /history (all roles, data-testid=history-page). Main remaining UX debt is per-status CTA branching in CentralInboxPage.",
+  "rca of the issue": "Prior iterations were missing the Koordinator SPD queue page and the PIC realisasi page against rab_submissions. Both are now implemented as SpdMonitoringPage and CentralRealizationPage with matching backend endpoints. History uses new /api/rab-history filter for SELESAI REALISASI/HISTORY statuses."
+}

@@ -15,6 +15,8 @@ import TravelReviewPage from "@/pages/TravelReviewPage";
 import TravelWizardPage from "@/pages/TravelWizardPage";
 import RabSubmissionDetailPage from "@/pages/RabSubmissionDetailPage";
 import HistoryPage from "@/pages/HistoryPage";
+import CentralRealizationPage from "@/pages/CentralRealizationPage";
+import SpdMonitoringPage from "@/pages/SpdMonitoringPage";
 
 function App() {
   return (
@@ -25,9 +27,9 @@ function App() {
             <Route index element={<DashboardPage />} />
             <Route path="rencana" element={<PlanPage />} />
             <Route path="persetujuan" element={<ApprovalsPage />} />
-            <Route path="realisasi" element={<RealizationPage />} />
+            <Route path="realisasi" element={<CentralRealizationPage />} />
             <Route path="inbox" element={<CentralInboxPage />} />
-            <Route path="monitoring" element={<MonitoringPage />} />
+            <Route path="monitoring" element={<SpdMonitoringPage />} />
             <Route path="ai-travel" element={<TravelWizardPage />} />
             <Route path="ai-travel/review" element={<TravelReviewPage />} />
             <Route path="rab-submissions/:submissionId" element={<RabSubmissionDetailPage />} />

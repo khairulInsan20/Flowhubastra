@@ -82,6 +82,14 @@ def build_router(get_db):
             {"_id": 0},
         ).sort("updated_at", -1).to_list(100)
 
+    @router.post("/rab-submissions/{submission_id}/realization-complete")
+    async def complete_rab_realization(submission_id: str, db: AsyncIOMotorDatabase = Depends(get_db)):
+        submission = await db.rab_submissions.find_one({"id": submission_id}, {"_id": 0})
+        if not submission or submission["status"] != "SIAP REALISASI PIC":
+            raise HTTPException(status_code=400, detail="RAB belum siap direalisasi.")
+        await db.rab_submissions.update_one({"id": submission_id}, {"$set": {"status": "SELESAI REALISASI", "updated_at": now_iso()}})
+        return await db.rab_submissions.find_one({"id": submission_id}, {"_id": 0})
+
     @router.post("/rab-submissions/{submission_id}/action")
     async def action_rab_submission(submission_id: str, payload: RABAction, db: AsyncIOMotorDatabase = Depends(get_db)):
         submission = await db.rab_submissions.find_one({"id": submission_id}, {"_id": 0})
