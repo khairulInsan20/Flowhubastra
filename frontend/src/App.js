@@ -1,4 +1,7 @@
 import "@/App.css";
+import "@/TravelWizard.css";
+import "@/TravelWizard.css";
+import "@/TravelWizard.css";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster } from "sonner";
 import Shell from "@/components/Shell";
@@ -8,7 +11,8 @@ import ApprovalsPage from "@/pages/ApprovalsPage";
 import RealizationPage from "@/pages/RealizationPage";
 import InboxPage from "@/pages/InboxPage";
 import MonitoringPage from "@/pages/MonitoringPage";
-import FlowhubTravelRequestPage from "@/pages/FlowhubTravelRequestPage";
+import TravelReviewPage from "@/pages/TravelReviewPage";
+import TravelWizardPage from "@/pages/TravelWizardPage";
 
 function App() {
   return (
@@ -22,7 +26,8 @@ function App() {
             <Route path="realisasi" element={<RealizationPage />} />
             <Route path="inbox" element={<InboxPage />} />
             <Route path="monitoring" element={<MonitoringPage />} />
-            <Route path="ai-travel" element={<FlowhubTravelRequestPage />} />
+            <Route path="ai-travel" element={<TravelWizardPage />} />
+            <Route path="ai-travel/review" element={<TravelReviewPage />} />
           </Route>
         </Routes>
       </BrowserRouter>
