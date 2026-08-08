@@ -6,7 +6,6 @@ import {
   Car,
   CheckCircle,
   Clock,
-  LockKey,
   MapPin,
   Sparkle,
 } from "@phosphor-icons/react";
@@ -44,6 +43,8 @@ export default function AiTravelAssistantPage() {
   const [airportId, setAirportId] = useState("");
   const [hotelId, setHotelId] = useState("");
   const [transportId, setTransportId] = useState("");
+  const [aiPlan, setAiPlan] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
   const totalBudget = Number(plan.budget || 0);
   const selectedAirport = airports.find((airport) => airport.id === airportId);
   const selectedHotel = hotels.find((hotel) => hotel.id === hotelId);
@@ -81,7 +82,64 @@ export default function AiTravelAssistantPage() {
   function chooseTransport(id) {
     setTransportId(id);
     setStage(4);
-    toast.info("AI akan menggabungkan pilihan ini menjadi rencana perjalanan setelah OpenAI terhubung.");
+    toast.info("Keputusan perjalanan siap dikirim ke GPT-5.4.");
+  }
+
+  async function generateAiPlan() {
+    if (!selectedAirport || !selectedHotel || !selectedTransport) {
+      toast.error("Pilih bandara, penginapan, dan transportasi terlebih dahulu.");
+      return;
+    }
+    setAiLoading(true);
+    setAiPlan("");
+    try {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/ai/travel-plan/stream`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          origin: plan.origin,
+          branch: plan.branch,
+          start_date: plan.startDate,
+          end_date: plan.endDate,
+          total_budget: totalBudget,
+          preference: plan.note,
+          airport_name: selectedAirport.name,
+          airport_code: selectedAirport.code,
+          airport_distance: selectedAirport.distance,
+          airport_transfer: selectedAirport.transfer,
+          hotel_name: selectedHotel.name,
+          hotel_distance: selectedHotel.distance,
+          hotel_nightly: selectedHotel.nightly,
+          transport_route: selectedTransport.label,
+          transport_mode: selectedTransport.detail,
+          transport_estimate: selectedTransport.estimate,
+        }),
+      });
+      if (!response.ok || !response.body) throw new Error("AI request failed");
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const blocks = buffer.split("\n\n");
+        buffer = blocks.pop() || "";
+        blocks.forEach((block) => {
+          const eventName = block.match(/^event: (.+)$/m)?.[1] || "message";
+          const data = block.match(/^data: (.+)$/m)?.[1];
+          if (eventName === "message" && data) {
+            const parsed = JSON.parse(data);
+            setAiPlan((current) => current + (parsed.delta || ""));
+          }
+          if (eventName === "error") toast.error(data || "AI belum dapat membuat rekomendasi.");
+        });
+      }
+    } catch (error) {
+      toast.error("AI belum dapat membuat rekomendasi. Silakan coba lagi.");
+    } finally {
+      setAiLoading(false);
+    }
   }
 
   return (
@@ -92,7 +150,7 @@ export default function AiTravelAssistantPage() {
           <h1 data-testid="ai-travel-assistant-title">AI Travel Assistant</h1>
           <p data-testid="ai-travel-assistant-description">AI membuat keputusan berurutan agar rute, tempat menginap, dan mobilitas lokal saling sesuai.</p>
         </div>
-        <span className="connection-chip" data-testid="ai-connection-status"><LockKey size={16} weight="bold" /> Menunggu koneksi OpenAI</span>
+        <span className="connection-chip ai-connected-chip" data-testid="ai-connection-status"><Sparkle size={16} weight="fill" /> GPT-5.4 aktif</span>
       </div>
 
       <div className="ai-stepper" data-testid="ai-decision-stepper">
@@ -130,7 +188,7 @@ export default function AiTravelAssistantPage() {
         <div className="transport-grid">{localTransport.map((route) => <button type="button" className={`transport-card ${transportId === route.id ? "transport-selected" : ""}`} key={route.id} onClick={() => chooseTransport(route.id)} data-testid={`select-transport-${route.id}`}><Car size={22} weight="duotone" /><span>{route.detail}</span><strong>{route.label}</strong><b>{formatter.format(route.estimate)}</b></button>)}</div>
       </section>}
 
-      {stage === 4 && <section className="ai-review-panel" data-testid="ai-trip-review-panel"><CheckCircle size={28} weight="fill" /><div><p className="eyebrow">TAHAP 4 / SIAP DIREVIEW</p><h2>Rencana keputusan berurutan telah terbentuk</h2><p data-testid="ai-trip-review-summary">{selectedAirport?.name}, {selectedHotel?.name}, dan rute {selectedTransport?.label} akan menjadi konteks awal GPT-5.4 untuk menghasilkan itinerary lengkap, estimasi total, serta alternatif hemat.</p></div><div className="ai-review-budget"><Clock size={18} /><span>Budget target</span><strong>{formatter.format(totalBudget)}</strong></div></section>}
+      {stage === 4 && <section className="ai-review-panel" data-testid="ai-trip-review-panel"><CheckCircle size={28} weight="fill" /><div><p className="eyebrow">TAHAP 4 / SIAP DIREVIEW</p><h2>Rencana keputusan berurutan telah terbentuk</h2><p data-testid="ai-trip-review-summary">{selectedAirport?.name}, {selectedHotel?.name}, dan rute {selectedTransport?.label} menjadi konteks GPT-5.4 untuk itinerary lengkap, estimasi total, serta alternatif hemat.</p><button className="primary-button ai-generate-button" type="button" onClick={generateAiPlan} disabled={aiLoading} data-testid="generate-gpt-plan-button"><Sparkle size={18} weight="fill" /> {aiLoading ? "Menyusun itinerary..." : "Buat itinerary dengan GPT-5.4"}</button>{aiPlan && <div className="ai-gpt-output" data-testid="gpt-travel-plan-output">{aiPlan}</div>}</div><div className="ai-review-budget"><Clock size={18} /><span>Budget target</span><strong>{formatter.format(totalBudget)}</strong></div></section>}
     </section>
   );
 }

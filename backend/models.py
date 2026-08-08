@@ -98,5 +98,24 @@ class TravelRecommendationQuery(BaseModel):
     budget: int = Field(gt=0)
 
 
+class AiTravelPlanRequest(BaseModel):
+    origin: str = Field(min_length=2, max_length=120)
+    branch: str = Field(min_length=2, max_length=160)
+    start_date: str
+    end_date: str
+    total_budget: int = Field(gt=0)
+    preference: str = Field(min_length=4, max_length=1000)
+    airport_name: str = Field(min_length=2, max_length=160)
+    airport_code: str = Field(min_length=2, max_length=10)
+    airport_distance: str = Field(min_length=2, max_length=100)
+    airport_transfer: int = Field(ge=0)
+    hotel_name: str = Field(min_length=2, max_length=200)
+    hotel_distance: str = Field(min_length=2, max_length=100)
+    hotel_nightly: int = Field(ge=0)
+    transport_route: str = Field(min_length=2, max_length=200)
+    transport_mode: str = Field(min_length=2, max_length=100)
+    transport_estimate: int = Field(ge=0)
+
+
 class ApiMessage(BaseModel):
     message: str

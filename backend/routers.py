@@ -2,10 +2,12 @@ from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from models import (
     AllocationUpdate,
+    AiTravelPlanRequest,
     BookingCreate,
     MockUploadCreate,
     RealizationCreate,
@@ -16,6 +18,7 @@ from models import (
     WorkflowAction,
 )
 from store import DEMO_PROFILES, get_demo_profile, now_iso, public_trip, public_trips, unique_id
+from ai_service import stream_travel_plan
 
 
 def build_router(get_db):
@@ -242,5 +245,13 @@ def build_router(get_db):
                 {"category": "Transport lokal", "provider": "Ride-hailing / taksi", "title": "Bandara/stasiun ↔ cabang ↔ hotel", "estimate": int(payload.budget * 0.25), "note": "Estimasi rute, bukan harga kendaraan langsung."},
             ],
         }
+
+    @router.post("/ai/travel-plan/stream")
+    async def create_ai_travel_plan(payload: AiTravelPlanRequest):
+        return StreamingResponse(
+            stream_travel_plan(payload),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
 
     return router
