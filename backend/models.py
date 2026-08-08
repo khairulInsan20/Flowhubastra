@@ -133,6 +133,15 @@ class BranchVisit(BaseModel):
     visit_date: str
     branch_name: str = Field(min_length=3, max_length=160)
 
+    @field_validator("visit_date")
+    @classmethod
+    def validate_visit_date(cls, value: str) -> str:
+        try:
+            date.fromisoformat(value)
+        except ValueError as error:
+            raise ValueError("Tanggal kunjungan cabang harus format YYYY-MM-DD.") from error
+        return value
+
 
 class LocalTransportLeg(BaseModel):
     route: str = Field(min_length=4, max_length=240)
@@ -147,6 +156,7 @@ class AiTravelRecommendationRequest(BaseModel):
     preference: str = Field(min_length=4, max_length=1000)
     selected_ticket: str = Field(default="", max_length=1000)
     selected_hotel: str = Field(default="", max_length=1000)
+    selected_transport: str = Field(default="", max_length=1000)
     transport_legs: List[LocalTransportLeg] = Field(default_factory=list, max_length=12)
 
 

@@ -123,7 +123,7 @@ async def stream_stage_recommendation(
             elif isinstance(event, StreamDone):
                 yield "event: done\ndata: {}\n\n"
     except Exception:
-        logger.exception("GPT-5.4 staged browsing recommendation failed")
+        logger.exception("Gemini 3.5 Flash staged browsing recommendation failed")
         yield "event: error\ndata: Gagal mencari rekomendasi AI. Silakan coba lagi.\n\n"
 
 
@@ -142,6 +142,7 @@ async def stream_final_itinerary(
     prompt = f"""Susun itinerary STO final dalam Bahasa Indonesia berdasarkan keputusan PIC berikut.
 Tiket terpilih: {payload.selected_ticket}
 Hotel terpilih: {payload.selected_hotel}
+Transport terpilih: {payload.selected_transport}
 Rute transport lokal: {', '.join(leg.route for leg in payload.transport_legs)}
 Jadwal cabang: {', '.join(f'{item.visit_date} {item.branch_name}' for item in payload.branch_visits)}
 Budget Koordinator: Rp{payload.total_budget:,}

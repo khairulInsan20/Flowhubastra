@@ -13,6 +13,14 @@ const defaultLegs = [
   ["hotel-hub", "Hotel → bandara / terminal / stasiun"],
 ];
 
+const legPurposes = {
+  "home-hub": "Keberangkatan dari tempat tinggal ke hub perjalanan",
+  "hub-branch": "Kedatangan dari hub perjalanan ke cabang STO",
+  "branch-branch": "Perpindahan antar cabang STO pada hari yang sama",
+  "branch-hotel": "Perjalanan dari cabang STO ke penginapan",
+  "hotel-hub": "Kepulangan dari penginapan ke hub perjalanan",
+};
+
 function formatCurrency(value) {
   return new Intl.NumberFormat("id-ID", {
     style: "currency",
@@ -31,6 +39,7 @@ export default function StagedTravelAssistantPage() {
   const [finalPlan, setFinalPlan] = useState("");
   const [selectedTicket, setSelectedTicket] = useState("");
   const [selectedHotel, setSelectedHotel] = useState("");
+  const [selectedTransport, setSelectedTransport] = useState("");
   const [selectedLegs, setSelectedLegs] = useState(["home-hub", "hub-branch", "branch-hotel", "hotel-hub"]);
   const [loadingStage, setLoadingStage] = useState("");
   const selectedTrip = useMemo(() => trips.find((trip) => trip.id === tripId), [trips, tripId]);
@@ -59,9 +68,9 @@ export default function StagedTravelAssistantPage() {
     setLoadingStage(stage);
     const setOutput = stage === "ticket" ? setTicketPlan : stage === "hotel" ? setHotelPlan : setTransportPlan;
     setOutput("");
-    const legs = defaultLegs.filter(([id]) => selectedLegs.includes(id)).map(([_, route]) => ({
+    const legs = defaultLegs.filter(([id]) => selectedLegs.includes(id)).map(([id, route]) => ({
       route,
-      purpose: "Perjalanan dinas STO",
+      purpose: legPurposes[id],
     }));
     try {
       const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/ai/travel-recommendations/stream`, {
@@ -75,6 +84,7 @@ export default function StagedTravelAssistantPage() {
           preference: "Utamakan tiba sebelum jam kerja dan efisiensi biaya STO.",
           selected_ticket: selectedTicket,
           selected_hotel: selectedHotel,
+          selected_transport: selectedTransport,
           transport_legs: legs,
         }),
       });
@@ -107,15 +117,15 @@ export default function StagedTravelAssistantPage() {
   }
 
   async function runFinalPlan() {
-    if (!transportPlan) return toast.error("Selesaikan rekomendasi transport lokal terlebih dahulu.");
+    if (!transportPlan || !selectedTransport.trim()) return toast.error("Pilih transport lokal terlebih dahulu.");
     setLoadingStage("final");
     setFinalPlan("");
-    const legs = defaultLegs.filter(([id]) => selectedLegs.includes(id)).map(([_, route]) => ({ route, purpose: "Perjalanan dinas STO" }));
+    const legs = defaultLegs.filter(([id]) => selectedLegs.includes(id)).map(([id, route]) => ({ route, purpose: legPurposes[id] }));
     try {
       const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/ai/final-itinerary/stream`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ stage: "local_transport", origin: selectedTrip.departure_city, total_budget: selectedTrip.total_budget, branch_visits: branchVisits, preference: "Efisien dan sesuai jadwal", selected_ticket: selectedTicket, selected_hotel: selectedHotel, transport_legs: legs }),
+        body: JSON.stringify({ stage: "local_transport", origin: selectedTrip.departure_city, total_budget: selectedTrip.total_budget, branch_visits: branchVisits, preference: "Efisien dan sesuai jadwal", selected_ticket: selectedTicket, selected_hotel: selectedHotel, selected_transport: selectedTransport, transport_legs: legs }),
       });
       const reader = response.body?.getReader();
       if (!response.ok || !reader) throw new Error("Final plan failed");
@@ -146,7 +156,7 @@ export default function StagedTravelAssistantPage() {
     <div className="ai-stage-stack">
       <section className="ai-stage-panel" data-testid="ticket-recommendation-stage"><div className="panel-heading"><div><p className="eyebrow">TAHAP 1</p><h2><Ticket size={20} /> Tiket perjalanan</h2></div><span className="estimate-badge">Browsing AI</span></div><p className="muted">AI membandingkan pilihan tiket sesuai jadwal STO dan budget yang telah ditetapkan.</p><button className="primary-button" type="button" onClick={() => runStage("ticket")} disabled={loadingStage === "ticket"} data-testid="browse-ticket-recommendations-button"><Sparkle size={18} weight="fill" /> {loadingStage === "ticket" ? "Mencari tiket..." : "Cari rekomendasi tiket"}</button>{ticketPlan && <><pre className="ai-gpt-output" data-testid="ticket-ai-output">{ticketPlan}</pre><label className="stage-choice-label">Tiket yang Anda pilih dari rekomendasi AI<input value={selectedTicket} onChange={(event) => setSelectedTicket(event.target.value)} placeholder="Tulis pilihan tiket/moda yang dipilih" data-testid="selected-ticket-input" /></label></>}</section>
       <section className="ai-stage-panel" data-testid="hotel-recommendation-stage"><div className="panel-heading"><div><p className="eyebrow">TAHAP 2</p><h2><Bed size={20} /> Penginapan</h2></div><span className="estimate-badge">Setelah tiket</span></div><p className="muted">AI mencari hotel berdasarkan jadwal cabang serta pilihan tiket yang telah Anda tetapkan.</p><button className="primary-button" type="button" onClick={() => runStage("hotel")} disabled={loadingStage === "hotel" || !selectedTicket.trim()} data-testid="browse-hotel-recommendations-button"><Sparkle size={18} weight="fill" /> {loadingStage === "hotel" ? "Mencari hotel..." : "Cari rekomendasi hotel"}</button>{hotelPlan && <><pre className="ai-gpt-output" data-testid="hotel-ai-output">{hotelPlan}</pre><label className="stage-choice-label">Penginapan yang Anda pilih<input value={selectedHotel} onChange={(event) => setSelectedHotel(event.target.value)} placeholder="Tulis hotel yang dipilih" data-testid="selected-hotel-input" /></label></>}</section>
-      <section className="ai-stage-panel" data-testid="local-transport-recommendation-stage"><div className="panel-heading"><div><p className="eyebrow">TAHAP 3</p><h2><Car size={20} /> Transport lokal</h2></div><span className="estimate-badge">Setelah hotel</span></div><p className="muted">Tentukan rute yang memang akan digunakan; AI kemudian mencari rekomendasi per rute.</p><div className="transport-leg-list">{defaultLegs.map(([id, label]) => <label key={id} className="transport-leg"><input type="checkbox" checked={selectedLegs.includes(id)} onChange={() => toggleLeg(id)} data-testid={`transport-leg-${id}-checkbox`} />{label}</label>)}</div><button className="primary-button" type="button" onClick={() => runStage("local_transport")} disabled={loadingStage === "local_transport" || !selectedHotel.trim()} data-testid="browse-local-transport-button"><Sparkle size={18} weight="fill" /> {loadingStage === "local_transport" ? "Mencari transport..." : "Cari rekomendasi transport"}</button>{transportPlan && <><pre className="ai-gpt-output" data-testid="transport-ai-output">{transportPlan}</pre><button className="primary-button" type="button" onClick={runFinalPlan} disabled={loadingStage === "final"} data-testid="generate-final-itinerary-button"><Sparkle size={18} weight="fill" /> {loadingStage === "final" ? "Menyusun itinerary..." : "Susun itinerary akhir GPT-5.4"}</button>{finalPlan && <pre className="ai-gpt-output" data-testid="final-itinerary-output">{finalPlan}</pre>}</>}</section>
+      <section className="ai-stage-panel" data-testid="local-transport-recommendation-stage"><div className="panel-heading"><div><p className="eyebrow">TAHAP 3</p><h2><Car size={20} /> Transport lokal</h2></div><span className="estimate-badge">Setelah hotel</span></div><p className="muted">Tentukan rute yang memang akan digunakan; AI kemudian mencari rekomendasi per rute.</p><div className="transport-leg-list">{defaultLegs.map(([id, label]) => <label key={id} className="transport-leg"><input type="checkbox" checked={selectedLegs.includes(id)} onChange={() => toggleLeg(id)} data-testid={`transport-leg-${id}-checkbox`} />{label}</label>)}</div><button className="primary-button" type="button" onClick={() => runStage("local_transport")} disabled={loadingStage === "local_transport" || !selectedHotel.trim()} data-testid="browse-local-transport-button"><Sparkle size={18} weight="fill" /> {loadingStage === "local_transport" ? "Mencari transport..." : "Cari rekomendasi transport"}</button>{transportPlan && <><pre className="ai-gpt-output" data-testid="transport-ai-output">{transportPlan}</pre><label className="stage-choice-label">Transport lokal yang Anda pilih<input value={selectedTransport} onChange={(event) => setSelectedTransport(event.target.value)} placeholder="Tulis moda atau penyedia transport yang dipilih" data-testid="selected-transport-input" /></label><button className="primary-button" type="button" onClick={runFinalPlan} disabled={loadingStage === "final" || !selectedTransport.trim()} data-testid="generate-final-itinerary-button"><Sparkle size={18} weight="fill" /> {loadingStage === "final" ? "Menyusun itinerary..." : "Susun itinerary akhir GPT-5.4"}</button>{finalPlan && <pre className="ai-gpt-output" data-testid="final-itinerary-output">{finalPlan}</pre>}</>}</section>
     </div>
   </section>;
 }

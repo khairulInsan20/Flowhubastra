@@ -279,6 +279,12 @@ def build_router(get_db):
 
     @router.post("/ai/final-itinerary/stream")
     async def create_final_itinerary(payload: AiTravelRecommendationRequest):
+        client_key = "global"
+        now = monotonic()
+        recent = [stamp for stamp in ai_request_times.get(client_key, []) if now - stamp < 60]
+        if len(recent) >= 5:
+            raise HTTPException(status_code=429, detail="Terlalu banyak permintaan AI. Coba lagi dalam satu menit.")
+        ai_request_times[client_key] = [*recent, now]
         return StreamingResponse(
             stream_final_itinerary(payload),
             media_type="text/event-stream",
