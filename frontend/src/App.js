@@ -8,7 +8,7 @@ import ApprovalsPage from "@/pages/ApprovalsPage";
 import RealizationPage from "@/pages/RealizationPage";
 import InboxPage from "@/pages/InboxPage";
 import MonitoringPage from "@/pages/MonitoringPage";
-import StagedTravelAssistantPage from "@/pages/StagedTravelAssistantPage";
+import ManualTravelPlannerPage from "@/pages/ManualTravelPlannerPage";
 
 function App() {
   return (
@@ -22,7 +22,7 @@ function App() {
             <Route path="realisasi" element={<RealizationPage />} />
             <Route path="inbox" element={<InboxPage />} />
             <Route path="monitoring" element={<MonitoringPage />} />
-            <Route path="ai-travel" element={<StagedTravelAssistantPage />} />
+            <Route path="ai-travel" element={<ManualTravelPlannerPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

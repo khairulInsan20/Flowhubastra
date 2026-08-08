@@ -1,0 +1,4 @@
+export default function TripDetailPanel({ trip, onClose }) {
+  if (!trip) return null;
+  return <div className="trip-detail-overlay" data-testid="trip-detail-modal"><section className="trip-detail-modal"><button className="text-button" type="button" onClick={onClose} data-testid="close-trip-detail-button">Tutup</button><p className="eyebrow">RINCIAN PERMINTAAN STO</p><h2 data-testid="trip-detail-title">{trip.title}</h2><dl><div><dt>Wilayah</dt><dd>{trip.region}</dd></div><div><dt>Cabang</dt><dd>{trip.branch}</dd></div><div><dt>Jadwal</dt><dd>{trip.start_date} — {trip.end_date}</dd></div><div><dt>PIC</dt><dd>{trip.traveler_name}</dd></div><div><dt>Budget</dt><dd>Rp{trip.total_budget.toLocaleString("id-ID")}</dd></div><div><dt>Status</dt><dd>{trip.status}</dd></div></dl></section></div>;
+}

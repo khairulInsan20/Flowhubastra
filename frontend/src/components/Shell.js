@@ -33,7 +33,7 @@ export default function Shell() {
       <aside className="sidebar" data-testid="primary-navigation">
         <Link to="/" className="brand" data-testid="brand-home-link">
           <span className="brand-mark">STO</span>
-          <span>Travel Desk</span>
+          <span>Flowhub</span>
         </Link>
         <p className="sidebar-caption" data-testid="sidebar-period-label">SIKLUS STO 2026</p>
         <nav className="nav-links" aria-label="Navigasi utama">
