@@ -96,6 +96,16 @@ def build_router(get_db):
         await db.rab_submissions.update_one({"id": submission_id}, {"$set": update})
         return await db.rab_submissions.find_one({"id": submission_id}, {"_id": 0})
 
+    @router.post("/rab-submissions/{submission_id}/resubmit")
+    async def resubmit_rab_submission(submission_id: str, db: AsyncIOMotorDatabase = Depends(get_db)):
+        submission = await db.rab_submissions.find_one({"id": submission_id}, {"_id": 0})
+        if not submission:
+            raise HTTPException(status_code=404, detail="Pengajuan RAB tidak ditemukan.")
+        if submission["status"] != "PERLU REVISI PIC":
+            raise HTTPException(status_code=400, detail="Hanya RAB revisi yang dapat diajukan ulang.")
+        await db.rab_submissions.update_one({"id": submission_id}, {"$set": {"status": "MENUNGGU KOORDINATOR", "updated_at": now_iso()}})
+        return await db.rab_submissions.find_one({"id": submission_id}, {"_id": 0})
+
     @router.get("/trips")
     async def list_trips(db: AsyncIOMotorDatabase = Depends(get_db)):
         return await public_trips(db)
