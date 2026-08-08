@@ -1,0 +1,47 @@
+{
+  "summary": "Frontend-only verification against the three-part bug report. Confirmed on public preview URL that the current change ONLY expands the Inbox status filter and does NOT implement (a) proper booking history for Secretary/PIC, (b) any Koordinator SPD action from Monitoring or elsewhere, or (c) PIC Realisasi wired to SIAP REALISASI PIC with per-component receipt upload. Backend statuses exist (MENUNGGU SPD KOORDINATOR, SIAP REALISASI PIC and action='spd_done') but there is no UI to drive them.",
+  "backend_issues": {"critical": [], "minor": [
+    {"endpoint": "POST /api/rab-submissions/{id}/action", "issue": "Backend transitions MENUNGGU PEMESANAN -> MENUNGGU SPD KOORDINATOR (never sets 'TIKET DAN HOTEL DIKONFIRMASI'), yet older DB rows still carry the legacy 'TIKET DAN HOTEL DIKONFIRMASI' status. Mixed data model - either migrate legacy rows or explicitly document both as booked/history statuses."}
+  ]},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "CentralInboxPage - Sekretaris list", "issue": "Booked rows (TIKET DAN HOTEL DIKONFIRMASI, MENUNGGU SPD KOORDINATOR) are shown mixed with actionable rows (MENUNGGU PEMESANAN). All rows carry the same CTA 'Lihat rincian & pesan' with no grouping, badge, or visual distinction between 'Perlu tindakan' and 'Riwayat'. From a user perspective there is no real booking history section - just a bigger flat list.", "selector": "[data-testid='central-inbox-queue']", "priority": "HIGH"},
+      {"component": "CentralInboxPage - PIC list", "issue": "PIC rows in status MENUNGGU SPD KOORDINATOR render CTA 'Revisi & ajukan ulang' pointing to /ai-travel. That status is the Koordinator's stage, not a PIC revisi - the label and destination are wrong for history entries. Also SIAP REALISASI PIC (added to the filter) never renders a Realisasi CTA - link still goes to /ai-travel.", "selector": "[data-testid^='open-inbox-rab-']", "priority": "HIGH"},
+      {"component": "MonitoringPage", "issue": "MonitoringPage still calls getTrips (legacy /api/trips). It does not query /api/rab-submissions, does not surface MENUNGGU SPD KOORDINATOR queue, and has no 'Selesaikan SPD' action. Koordinator therefore cannot complete SPD from Monitoring - the entire SPD monitoring feature is missing. HTML scan on /monitoring: contains 'SPD'=False, 'SIAP REALISASI'=False.", "selector": "[data-testid='monitoring-page']", "priority": "CRITICAL"},
+      {"component": "RabSubmissionDetailPage", "issue": "canAct only whitelists MENUNGGU KOORDINATOR/SPV/MANAGER/PEMESANAN. No branch for role=Koordinator + status=MENUNGGU SPD KOORDINATOR - opening such a submission as Koordinator shows 0 action buttons ([data-testid='rab-action-buttons'] absent). There is no way to POST action='spd_done'.", "selector": "[data-testid='rab-submission-detail-page']", "priority": "CRITICAL"},
+      {"component": "RealizationPage", "issue": "Still driven by getTrips + submitRealization on the legacy trip model. It does NOT: (a) filter rab_submissions by status SIAP REALISASI PIC, (b) iterate over submission.items[] to allow one receipt per submitted component, (c) submit component-scoped realisasi metadata. Only a single file input exists ([data-testid='actual-proof-file-input']). HTML scan on /realisasi: 'SIAP REALISASI'=False, 'rab-submissions'=False.", "selector": "[data-testid='realization-page']", "priority": "CRITICAL"},
+      {"component": "CentralInboxPage code quality", "issue": "Entire component is a single-line JSX return (very hard to review); filter list of statuses is a magic array inline.", "selector": "n/a", "priority": "LOW"}
+    ],
+    "integration_issues": [
+      {"flow": "Secretary marks booked -> history", "issue": "After Secretary posts action to /rab-submissions/{id}/action, backend flips status to MENUNGGU SPD KOORDINATOR. Frontend inbox surfaces it but as an actionable-looking row with the same CTA. No dedicated 'Riwayat pemesanan' tab/panel for Secretary or PIC.", "affected_selectors": ["[data-testid='central-inbox-queue']"]},
+      {"flow": "Koordinator SPD completion", "issue": "Endpoint exists (POST /rab-submissions/{id}/action {actor_role:'Koordinator', action:'spd_done'}) but no UI trigger anywhere (Monitoring, Persetujuan, or RabSubmissionDetailPage) calls it.", "affected_selectors": []},
+      {"flow": "PIC receipt upload per submitted component", "issue": "RealizationPage never fetches /api/rab-submissions with status=SIAP REALISASI PIC and never renders per-item receipt inputs. resubmitRabSubmission is defined but unused. No endpoint or UI to store per-component receipts on the rab_submissions record.", "affected_selectors": ["[data-testid='realization-form']"]}
+    ],
+    "design_issues": [
+      {"screen": "CentralInboxPage", "issues": ["No grouping between 'perlu tindakan' and 'riwayat'; identical CTA styling for both; unclear which rows are actionable"]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Split CentralInboxPage into 'Perlu tindakan' vs 'Riwayat' sections. For Sekretaris: actionable=MENUNGGU PEMESANAN, history=MENUNGGU SPD KOORDINATOR & TIKET DAN HOTEL DIKONFIRMASI & SIAP REALISASI PIC. For PIC: actionable=PERLU REVISI PIC & SIAP REALISASI PIC, history=MENUNGGU SPD KOORDINATOR (informational only) plus previously-booked entries. Render distinct CTAs (Revisi, Realisasi bukti, Lihat riwayat) with different data-testids.",
+    "Add Koordinator SPD queue - either a new panel in MonitoringPage that lists rab_submissions filtered by status='MENUNGGU SPD KOORDINATOR' with a 'Selesaikan SPD' button, or a Koordinator card on the RabSubmissionDetailPage when status='MENUNGGU SPD KOORDINATOR', calling actionRabSubmission(id, {actor_role:'Koordinator', action:'spd_done'}). Add data-testid='complete-spd-button'.",
+    "Rebuild PIC Realisasi to consume rab_submissions with status='SIAP REALISASI PIC'. Render one receipt row per submission.items[] entry (label, amount, file input, note). Persist per-component receipts (extend backend model or a new /rab-submissions/{id}/realisasi endpoint). Only after all components are receipted, allow submit which transitions status.",
+    "Backfill/migrate legacy 'TIKET DAN HOTEL DIKONFIRMASI' rab_submissions to the new 'MENUNGGU SPD KOORDINATOR' status (or explicitly display both as booked).",
+    "Fix PIC inbox CTA logic - a MENUNGGU SPD KOORDINATOR row should NOT show 'Revisi & ajukan ulang' pointing to /ai-travel."
+  ],
+  "critical_code_review_comments": [
+    "MonitoringPage and RealizationPage still consume /api/trips while the centralized workflow uses /api/rab-submissions. Two parallel data models remain unreconciled - the SPD/Realisasi lifecycle cannot be closed on rab_submissions.",
+    "RabSubmissionDetailPage.canAct is a hardcoded chain of OR conditions with no branch for MENUNGGU SPD KOORDINATOR - refactor to a role/status action map keyed by (role,status)=action.",
+    "CentralInboxPage encodes role->status filter as an inline ternary/array; extract a small helper (getInboxBuckets(role)) returning {actionable:[], history:[]} for testability.",
+    "resubmitRabSubmission remains dead code in api.js.",
+    "RealizationPage form is hardcoded to a single dummy expense; no linkage to submission items array; validation is Pydantic-heavy backend-side (RealizationCreate) so per-component receipts will need a new schema."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "not tested (frontend-only per request)", "frontend": "0/3 requested behaviors fully implemented (inbox expansion is superficial; SPD-from-monitoring absent; Realisasi<->SIAP REALISASI PIC absent)"},
+  "test_credentials": "N/A - role via localStorage flowhub-demo-role.",
+  "seed_data_creation": "Reused existing TEST_* rab_submissions; verified rab-6d9c29e3c4 is currently in MENUNGGU SPD KOORDINATOR.",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "The three items in the bug report remain unresolved. The only real change was widening CentralInboxPage status filters. Koordinator SPD action and PIC per-component realisasi still have zero UI. Backend statuses/endpoints for SPD are in place; models.py has no per-component receipt schema yet. Test rab-6d9c29e3c4 is available as a MENUNGGU SPD KOORDINATOR fixture.",
+  "rca of the issue": "Root cause: main agent extended CentralInboxPage status arrays to include MENUNGGU SPD KOORDINATOR / TIKET DAN HOTEL DIKONFIRMASI / SIAP REALISASI PIC but did not (1) group actionable vs history, (2) branch CTAs per status, (3) implement Koordinator spd_done action in RabSubmissionDetailPage or MonitoringPage, (4) rewrite RealizationPage against rab_submissions with per-component receipts. Verified via Playwright: MonitoringPage HTML has no 'SPD'/'SIAP REALISASI' tokens; RabSubmissionDetailPage renders 0 action buttons for Koordinator on MENUNGGU SPD KOORDINATOR; RealizationPage HTML has no 'SIAP REALISASI' or 'rab-submissions' references. Mitigation: implement the action items above."
+}
