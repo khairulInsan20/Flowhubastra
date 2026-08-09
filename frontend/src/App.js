@@ -19,7 +19,7 @@ import SpdMonitoringPage from "@/pages/SpdMonitoringPage";
 function App() {
   return (
     <div className="App">
-      <BrowserRouter>
+      <BrowserRouter basename="/Flowhubastra">
         <Routes>
           <Route path="/" element={<Shell />}>
             <Route index element={<DashboardPage />} />
