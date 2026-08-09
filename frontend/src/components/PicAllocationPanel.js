@@ -1,48 +1,98 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { PaperPlaneTilt } from "@phosphor-icons/react";
 import { toast } from "sonner";
-import { getTrips, setAllocation, submitTrip } from "@/api";
+import {
+  getTrips,
+  setAllocation,
+  submitTrip,
+} from "@/api";
 import BudgetBar from "@/components/BudgetBar";
 
-export default function PicAllocationPanel({ profileId }) {
+export default function PicAllocationPanel({
+  profileId,
+}) {
   const [trips, setTrips] = useState([]);
   const [tripId, setTripId] = useState("");
 
   const [allocations, setAllocations] = useState([
-    { category: "Tiket", percentage: 30 },
-    { category: "Hotel", percentage: 45 },
-    { category: "Transport lokal", percentage: 25 },
+    {
+      category: "Tiket",
+      percentage: 30,
+    },
+    {
+      category: "Hotel",
+      percentage: 45,
+    },
+    {
+      category: "Transport lokal",
+      percentage: 25,
+    },
   ]);
 
-  const total = useMemo(
-    () =>
-      allocations.reduce(
-        (sum, item) => sum + Number(item.percentage),
-        0
-      ),
-    [allocations]
-  );
+  const total = useMemo(() => {
+    return allocations.reduce(
+      (sum, item) =>
+        sum + Number(item.percentage || 0),
+      0
+    );
+  }, [allocations]);
 
-  const assignedTrips = trips.filter(
-    (trip) =>
-      trip.assigned_pic_id === profileId &&
-      ["DRAF ALOKASI PIC", "PERLU REVISI"].includes(trip.status)
-  );
-
-  const load = useCallback(() => {
-    getTrips().then((items) => {
-      setTrips(items);
-
-      const first = items.find(
+  const assignedTrips = Array.isArray(trips)
+    ? trips.filter(
         (trip) =>
           trip.assigned_pic_id === profileId &&
-          ["DRAF ALOKASI PIC", "PERLU REVISI"].includes(trip.status)
-      );
+          [
+            "DRAF ALOKASI PIC",
+            "PERLU REVISI",
+          ].includes(trip.status)
+      )
+    : [];
 
-      if (first) {
-        setTripId(first.id);
-      }
-    });
+  const load = useCallback(() => {
+    getTrips()
+      .then((result) => {
+        /*
+         * Backend bisa mengembalikan:
+         *
+         * 1. Array langsung:
+         *    [...]
+         *
+         * 2. Object:
+         *    { trips: [...] }
+         *
+         * 3. Object:
+         *    { data: [...] }
+         */
+
+        const items = Array.isArray(result)
+          ? result
+          : Array.isArray(result?.trips)
+          ? result.trips
+          : Array.isArray(result?.data)
+          ? result.data
+          : [];
+
+        setTrips(items);
+
+        const first = items.find(
+          (trip) =>
+            trip.assigned_pic_id === profileId &&
+            [
+              "DRAF ALOKASI PIC",
+              "PERLU REVISI",
+            ].includes(trip.status)
+        );
+
+        if (first) {
+          setTripId(first.id);
+        }
+      })
+      .catch(() => {
+        setTrips([]);
+        toast.error(
+          "Data STO belum dapat dimuat."
+        );
+      });
   }, [profileId]);
 
   useEffect(() => {
@@ -50,10 +100,13 @@ export default function PicAllocationPanel({ profileId }) {
   }, [load]);
 
   function updateAllocation(index, value) {
-    setAllocations(
-      allocations.map((item, current) =>
-        current === index
-          ? { ...item, percentage: Number(value) }
+    setAllocations((current) =>
+      current.map((item, currentIndex) =>
+        currentIndex === index
+          ? {
+              ...item,
+              percentage: Number(value),
+            }
           : item
       )
     );
@@ -95,15 +148,17 @@ export default function PicAllocationPanel({ profileId }) {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold">
-          PIC ACCOUNTING / RENCANA ALOKASI
-        </h2>
+    <section className="data-panel">
+      <div className="panel-heading">
+        <div>
+          <p className="eyebrow">
+            PIC ACCOUNTING / RENCANA ALOKASI
+          </p>
 
-        <p className="text-sm text-muted-foreground">
-          Tentukan proporsi anggaran
-        </p>
+          <h2>
+            Tentukan proporsi anggaran
+          </h2>
+        </div>
       </div>
 
       <div className="space-y-2">
@@ -132,6 +187,12 @@ export default function PicAllocationPanel({ profileId }) {
             </option>
           ))}
         </select>
+
+        {assignedTrips.length === 0 && (
+          <p className="text-sm text-muted-foreground">
+            Belum ada STO yang ditugaskan.
+          </p>
+        )}
       </div>
 
       <div className="text-sm">
@@ -201,12 +262,14 @@ export default function PicAllocationPanel({ profileId }) {
       <button
         type="button"
         onClick={saveAndSubmit}
-        disabled={!tripId || total !== 100}
+        disabled={
+          !tripId || total !== 100
+        }
         className="inline-flex items-center gap-2 rounded-md px-4 py-2 disabled:opacity-50"
       >
         <PaperPlaneTilt size={18} />
         Kirim RAB
       </button>
-    </div>
+    </section>
   );
 }
