@@ -42,7 +42,7 @@ export default function PicAllocationPanel({ profileId }) {
     <p className="eyebrow">PIC ACCOUNTING / RENCANA ALOKASI</p>
     <h2>Tentukan proporsi anggaran</h2>
     <label className="allocation-trip-label">STO yang ditugaskan<select value={tripId} onChange={(event) => setTripId(event.target.value)} data-testid="assigned-trip-select"><option value="">Pilih rencana STO</option>{assignedTrips.map((trip) => <option key={trip.id} value={trip.id} label={`${trip.title} · ${trip.branch}`} />)}</select></label>
-    <p className="muted" data-testid="pic-profile-autofill">Profil PIC: Nadia Pratama · nadia.pratama@auto2000.co.id · 081234567890</p>
+    <p className="muted" data-testid="pic-profile-autofill">Profil PIC: Khairul Insan Al Amin · Khairul.insan@ai.astra.co.id · 08882856395</p>
     {allocations.map((item, index) => <label className="allocation-control" key={item.category}>{item.category}<div><input type="range" min="0" max="100" value={item.percentage} onChange={(event) => updateAllocation(index, event.target.value)} data-testid={`pic-allocation-${item.category.toLowerCase().replaceAll(" ", "-")}-range`} /><output data-testid={`pic-allocation-${item.category.toLowerCase().replaceAll(" ", "-")}-value`}>{item.percentage}%</output></div></label>)}
     <BudgetBar allocations={allocations} />
     <p className="muted" data-testid="pic-allocation-total">Total proporsi: {total}%</p>
