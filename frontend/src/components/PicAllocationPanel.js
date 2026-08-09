@@ -1,4 +1,3 @@
-```javascript
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { PaperPlaneTilt } from "@phosphor-icons/react";
 import { toast } from "sonner";
