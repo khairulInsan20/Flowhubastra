@@ -33,6 +33,8 @@ jobs:
 
       - name: Build React
         working-directory: frontend
+        env:
+          CI: false
         run: npm run build
 
       - name: Setup Pages
