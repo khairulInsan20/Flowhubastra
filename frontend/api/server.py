@@ -20,6 +20,10 @@ db = client[os.environ['DB_NAME']]
 # Create the main app without a prefix
 app = FastAPI(root_path="/api")
 
+@app.get("/")
+async def root():
+    return {"message": "STO Desk API aktif"}
+
 def get_db():
     return db
 
