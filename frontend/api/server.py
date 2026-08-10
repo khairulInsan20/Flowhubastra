@@ -21,7 +21,13 @@ db = client[os.environ["DB_NAME"]]
 
 
 # Create FastAPI application
-app = FastAPI()
+app = FastAPI(
+    title="STO Desk API",
+    version="0.1.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
+)
 
 
 def get_db():
