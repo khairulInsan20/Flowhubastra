@@ -10,7 +10,7 @@ from routers import build_router
 from store import seed_demo_data
 
 
-ROOT_DIR = Path(__file__).resolve().parent
+ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
 
 
@@ -21,20 +21,20 @@ db = client[os.environ["DB_NAME"]]
 
 
 # Create FastAPI application
-app = FastAPI(
-    title="STO Desk API",
-    version="0.1.0",
-    docs_url="/docs",
-    redoc_url="/redoc",
-    openapi_url="/openapi.json",
-)
+app = FastAPI()
+
+
+# Root endpoint
+@app.get("/")
+async def root():
+    return {"message": "STO Desk API aktif"}
 
 
 def get_db():
     return db
 
 
-# Include all API routes
+# Register API routes
 app.include_router(build_router(get_db))
 
 
@@ -48,7 +48,7 @@ app.add_middleware(
 )
 
 
-# Configure logging
+# Logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -57,23 +57,13 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-# Test root
-@app.get("/")
-async def root():
-    return {"message": "STO Desk API aktif"}
-
-
-# Test route
-@app.get("/test")
-async def test():
-    return {"status": "SERVER BERHASIL"}
-
-
+# Startup
 @app.on_event("startup")
 async def initialize_demo_data():
     await seed_demo_data(db)
 
 
+# Shutdown
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
