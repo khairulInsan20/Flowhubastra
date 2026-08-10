@@ -26,7 +26,7 @@ from ai_service import stream_final_itinerary, stream_stage_recommendation, stre
 
 
 def build_router(get_db):
-    router = APIRouter()
+    router = APIRouter(prefix="/api")
     ai_request_times: dict[str, list[float]] = {}
 
     async def get_trip_or_404(trip_id: str, db: AsyncIOMotorDatabase) -> dict:
